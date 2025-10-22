@@ -1,11 +1,11 @@
-import { useState } from "react"
+import { useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
   type Node,
   type Edge,
-} from "@xyflow/react"
-import "@xyflow/react/dist/style.css"
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,25 +16,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface DiagramCanvasProps {
-  productName: string
-}
-interface ProcessData extends Record<string, unknown> {
-  label: string
+  productId: number;
 }
 
-export default function DiagramCanvas({ productName }: DiagramCanvasProps) {
-  const [nodes, setNodes] = useState<Node<ProcessData>[]>([])
-  const [edges, setEdges] = useState<Edge[]>([])
-  const [newNodeName, setNewNodeName] = useState("")
-  const [insertPos, setInsertPos] = useState<string>("1")
-  const [dialogOpen, setDialogOpen] = useState(false)
+interface ProcessData extends Record<string, unknown> {
+  label: string;
+}
+
+export default function DiagramCanvas({ productId }: DiagramCanvasProps) {
+  const [nodes, setNodes] = useState<Node<ProcessData>[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+  const [newNodeName, setNewNodeName] = useState("");
+  const [insertPos, setInsertPos] = useState<string>("1");
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const computePositions = (list: Node<ProcessData>[]) =>
     list.map((n, i) => ({
@@ -43,7 +44,7 @@ export default function DiagramCanvas({ productName }: DiagramCanvasProps) {
       data: {
         label: `${i + 1}. ${n.data.label.replace(/^\d+\.\s*/, "")}`,
       },
-    }))
+    }));
 
   const computeEdges = (list: Node<ProcessData>[]): Edge[] =>
     list.slice(0, -1).map((_, i) => ({
@@ -52,36 +53,36 @@ export default function DiagramCanvas({ productName }: DiagramCanvasProps) {
       target: list[i + 1].id,
       type: "smoothstep",
       animated: true,
-    }))
+    }));
 
   const handleAddNode = () => {
-    if (!newNodeName.trim() || !insertPos) return
+    if (!newNodeName.trim() || !insertPos) return;
 
-    const pos = Math.max(1, Math.min(Number(insertPos), nodes.length + 1)) - 1
+    const pos = Math.max(1, Math.min(Number(insertPos), nodes.length + 1)) - 1;
     const newNode: Node<ProcessData> = {
       id: `n${Date.now()}`,
       position: { x: 0, y: 0 },
       data: { label: newNodeName },
       draggable: false,
       selectable: false,
-    }
+    };
 
-    const updatedNodes = [...nodes.slice(0, pos), newNode, ...nodes.slice(pos)]
-    const positioned = computePositions(updatedNodes)
-    const connected = computeEdges(positioned)
+    const updatedNodes = [...nodes.slice(0, pos), newNode, ...nodes.slice(pos)];
+    const positioned = computePositions(updatedNodes);
+    const connected = computeEdges(positioned);
 
-    setNodes(positioned)
-    setEdges(connected)
-    setNewNodeName("")
-    setInsertPos((positioned.length + 1).toString())
-    setDialogOpen(false)
-  }
+    setNodes(positioned);
+    setEdges(connected);
+    setNewNodeName("");
+    setInsertPos((positioned.length + 1).toString());
+    setDialogOpen(false);
+  };
 
   const positionPlaceholder =
-    nodes.length === 0 ? "1" : `1 - ${nodes.length + 1}`
+    nodes.length === 0 ? "1" : `1 - ${nodes.length + 1}`;
 
   const isCreateDisabled =
-    !newNodeName.trim() || !insertPos.trim() || Number(insertPos) < 1
+    !newNodeName.trim() || !insertPos.trim() || Number(insertPos) < 1;
 
   return (
     <div className="relative w-full h-[550px] bg-white border border-blue-100 rounded-xl overflow-hidden">
@@ -94,7 +95,7 @@ export default function DiagramCanvas({ productName }: DiagramCanvasProps) {
               className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
               onClick={() => {
                 // autocompleta con la siguiente posición libre
-                setInsertPos((nodes.length + 1).toString())
+                setInsertPos((nodes.length + 1).toString());
               }}
             >
               +
@@ -107,8 +108,8 @@ export default function DiagramCanvas({ productName }: DiagramCanvasProps) {
               <AlertDialogDescription>
                 Inserta un nuevo proceso dentro del flujo de{" "}
                 <span className="font-semibold text-blue-600">
-                  {productName}
-                </span>.
+                  Producto #{productId}
+                </span>
               </AlertDialogDescription>
             </AlertDialogHeader>
 
@@ -141,9 +142,9 @@ export default function DiagramCanvas({ productName }: DiagramCanvasProps) {
                   placeholder={positionPlaceholder}
                   value={insertPos}
                   onChange={(e) => {
-                    const val = e.target.value
+                    const val = e.target.value;
                     if (val === "" || /^[0-9]+$/.test(val)) {
-                      setInsertPos(val)
+                      setInsertPos(val);
                     }
                   }}
                   disabled={nodes.length === 0}
@@ -183,5 +184,5 @@ export default function DiagramCanvas({ productName }: DiagramCanvasProps) {
         />
       </ReactFlowProvider>
     </div>
-  )
+  );
 }
