@@ -7,6 +7,7 @@ import {
   type NodeMouseHandler,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { CustomNode } from "./CustomNode";
 
 export interface ProcessData extends Record<string, unknown> {
   label: string;
@@ -36,6 +37,7 @@ export function DiagramInner({ nodes, edges, onNodeClick }: DiagramInnerProps) {
       nodes={nodes}
       edges={edges}
       onNodeClick={handleNodeClick}
+      nodeTypes={{ custom: CustomNode }}
       minZoom={0.8}
       maxZoom={1.5}
       panOnDrag
