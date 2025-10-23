@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import DiagramCanvas from "@/pages/Diagram/DiagramCanvas";
+import DiagramCanvas from "@/pages/Diagram/DiagramCanvas/DiagramCanvas";
 import { getCatalogos } from "@/api/catalogoApi";
 import { Loader2 } from "lucide-react";
 
