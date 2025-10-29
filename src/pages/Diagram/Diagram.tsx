@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import DiagramCanvas from "@/pages/Diagram/DiagramCanvas/DiagramCanvas";
 import { getCatalogos } from "@/api/catalogoApi";
 import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Catalogo {
   id_catalogo: number;
@@ -13,6 +14,7 @@ export default function Diagrama() {
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [products, setProducts] = useState<Catalogo[]>([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const capitalize = (str: string) =>
     str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -37,6 +39,15 @@ export default function Diagrama() {
       {/* Sidebar de productos */}
       <aside className="w-64 bg-white border border-gray-200 rounded-xl shadow-sm p-4">
         <h2 className="text-lg font-semibold mb-4 text-blue-700">Productos</h2>
+
+        {/* Botón para editar productos */}
+        <Button
+          variant="secondary"
+          className="w-full mb-4 bg-blue-100 text-blue-700 hover:bg-blue-200"
+          onClick={() => navigate("/catalogo")}
+        >
+          Editar productos
+        </Button>
 
         {loading ? (
           <div className="flex items-center justify-center py-10 text-gray-500">

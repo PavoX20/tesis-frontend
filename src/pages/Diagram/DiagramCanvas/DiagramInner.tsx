@@ -20,14 +20,27 @@ export interface ProcessData extends Record<string, unknown> {
 type OnNodeClick = (e: React.MouseEvent, node: Node<ProcessData>) => void;
 
 interface DiagramInnerProps {
-  nodes: Node<ProcessData>[];   // OK
-  edges: Edge[];                // Edge NO lleva <ProcessData>
-  onNodeClick?: OnNodeClick;    // nuestro tipo propio
+  nodes: Node<ProcessData>[];
+  edges: Edge[];
+  onNodeClick?: OnNodeClick;
+}
+
+function TitleNode({ data }: { data: { label: string } }) {
+  const isSubdiagram = data.label?.toLowerCase().includes("subdiagrama");
+  return (
+    <div
+      className={`text-xl ${
+        isSubdiagram ? "font-normal text-blue-600" : "font-semibold text-blue-700"
+      }`}
+
+      style={{ width: 130, textAlign: "center" }}
+    >
+      {data.label}
+    </div>
+  );
 }
 
 export function DiagramInner({ nodes, edges, onNodeClick }: DiagramInnerProps) {
-
-  // Adaptador: NodeMouseHandler -> OnNodeClick
   const handleNodeClick: NodeMouseHandler = (e, node) => {
     onNodeClick?.(e, node as Node<ProcessData>);
   };
@@ -37,7 +50,10 @@ export function DiagramInner({ nodes, edges, onNodeClick }: DiagramInnerProps) {
       nodes={nodes}
       edges={edges}
       onNodeClick={handleNodeClick}
-      nodeTypes={{ custom: CustomNode }}
+      nodeTypes={{
+        custom: CustomNode,
+        title: TitleNode, // 👈 nuevo tipo de nodo
+      }}
       minZoom={0.8}
       maxZoom={1.5}
       panOnDrag

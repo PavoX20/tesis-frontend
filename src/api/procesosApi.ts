@@ -16,7 +16,7 @@ export const getProcesoById = async (id: number) => {
   return res.data;
 };
 
-export const createProceso = async (data: ProcesoPayload) => {
+export const createProceso = async (data: any) => {
   const res = await axiosClient.post("/procesos/", data);
   return res.data;
 };
@@ -33,5 +33,10 @@ export const deleteProceso = async (id: number) => {
 
 export const getProcesoDetalle = async (id: number) => {
   const res = await axiosClient.get(`/procesos-detalle/${id}`);
+  return res.data;
+};
+
+export const getProcesosPorDiagrama = async (idDiagrama: number) => {
+  const res = await axiosClient.get(`/procesos/${idDiagrama}`);
   return res.data;
 };

@@ -14,3 +14,8 @@ export const getDiagramasDetalle = async (idCatalogo: number) => {
   const res = await axiosClient.get(`/diagramas-detalle/${idCatalogo}`);
   return res.data;
 };
+
+export const getDiagramasPorCatalogo = async (idCatalogo: number) => {
+  const res = await axiosClient.get(`/diagramas/${idCatalogo}`);
+  return res.data;
+};
