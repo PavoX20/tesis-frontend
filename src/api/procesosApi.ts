@@ -1,10 +1,13 @@
 import axiosClient from "./axiosClient";
 
-interface ProcesoPayload {
-  nombre_proceso?: string;
-  distribucion?: string;
-  parametros?: string;
-}
+
+export type ProcesoUpdate = Partial<{
+  nombre_proceso: string;
+  distribucion: string | null;
+  parametros: string | null;
+  id_tipomaquina: number | null;
+  orden: number | null;
+}>;
 
 export const getProcesos = async () => {
   const res = await axiosClient.get("/procesos/");
@@ -21,10 +24,11 @@ export const createProceso = async (data: any) => {
   return res.data;
 };
 
-export const updateProceso = async (id: number, data: ProcesoPayload) => {
-  const res = await axiosClient.put(`/procesos/${id}`, data);
-  return res.data;
-};
+
+export async function updateProceso(id: number, payload: ProcesoUpdate) {
+  const { data } = await axiosClient.put(`/procesos/${id}`, payload);
+  return data;
+}
 
 export const deleteProceso = async (id: number) => {
   const res = await axiosClient.delete(`/procesos/${id}`);
