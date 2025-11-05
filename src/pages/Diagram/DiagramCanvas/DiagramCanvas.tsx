@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { ReactFlowProvider, type Node, type Edge } from "@xyflow/react";
 import { DiagramInner, type ProcessData } from "./DiagramInner";
 import { AddProcessDialog } from "./AddProcessDialog";
-import { ProcessDetailPanel } from "./ProcessDetailPanel";
+import { ProcessDetailPanel } from "./ProcessDetailPanel/ProcessDetailPanel";
 import { Loader2 } from "lucide-react";
 import { getDiagramasDetalle } from "@/api/diagramaApi";
 import { createProceso } from "@/api/procesosApi";
+
 
 export default function DiagramCanvas({ productId }: { productId: number }) {
   const [nodes, setNodes] = useState<Node<ProcessData>[]>([]);
