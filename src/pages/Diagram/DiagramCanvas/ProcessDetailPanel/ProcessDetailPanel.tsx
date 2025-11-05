@@ -240,15 +240,15 @@ export function ProcessDetailPanel({ selectedProcess, onSaved }: ProcessDetailPa
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto pr-2">
         {/* Meta */}
-        <div className="space-y-4 pb-4 border-b border-gray-200 mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Detalles del Proceso</h2>
-          <p className="text-sm text-gray-500">Edita la información del proceso seleccionado</p>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Orden</label>
-            <Input value={selectedProcess.orden ?? ""} disabled className="bg-gray-100 text-gray-700 border-gray-200" />
+        <div className="space-y-3 pb-4 border-b border-gray-200 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-800">Detalles del Proceso</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Orden</span>
+              <Input value={selectedProcess.orden ?? ""} disabled className="h-8 w-16 text-center bg-gray-100 text-gray-700 border-gray-200" />
+            </div>
           </div>
-
+          <p className="text-sm text-gray-500">Edita la información del proceso seleccionado</p>
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">Nombre del Proceso</label>
             <Input
@@ -258,63 +258,8 @@ export function ProcessDetailPanel({ selectedProcess, onSaved }: ProcessDetailPa
               placeholder="Nombre del proceso"
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Distribución</label>
-            <Select value={form.distribucion} onValueChange={(value) => setForm((p)=>({ ...p, distribucion: value }))}>
-              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-400 focus:ring-blue-300">
-                <SelectValue placeholder="Selecciona distribución" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="norm">Normal</SelectItem>
-                <SelectItem value="expon">Exponencial</SelectItem>
-                <SelectItem value="lognorm">Lognormal</SelectItem>
-                <SelectItem value="gamma">Gamma</SelectItem>
-                <SelectItem value="weibull_min">Weibull Min</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {paramsCount > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">Parámetros ({paramsCount})</label>
-              <div className="flex gap-2">
-                {Array.from({ length: paramsCount }).map((_, i) => (
-                  <Input key={i}
-                    value={form.parametros[i] || ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setForm(prev => {
-                        const updated = [...prev.parametros];
-                        updated[i] = v;
-                        return { ...prev, parametros: updated };
-                      });
-                    }}
-                    placeholder={`Parámetro ${i + 1}`}
-                    className="bg-white border-gray-300 focus:border-blue-400 focus:ring-blue-300 w-1/3 text-sm"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
-        <Separator className="my-4" />
-
-        {/* Área y Máquina */}
-        <AreaMachineSection
-          areas={areas}
-          areaId={areaId}
-          setAreaId={setAreaId}
-          onAreaCreated={(a)=> setAreas(prev => [...prev, a])}
-          maquinas={tmList}
-          tmId={tmId}
-          setTmId={setTmId}
-          onMaquinaCreated={(tm)=> setTmList(prev => [...prev, tm])}
-          disabledMachine={!areaId}
-        />
-
-        <Separator className="my-6" />
 
         {/* Receta */}
         <div className="space-y-4">
@@ -337,7 +282,68 @@ export function ProcessDetailPanel({ selectedProcess, onSaved }: ProcessDetailPa
             onRemove={removeSalida}
             onMateriaCreated={(m) => setMaterias(prev=>[...prev, m])}
           />
-          <p className="text-xs text-muted-foreground">La unidad se toma de la materia. Para cambiarla, edita la materia.</p>
+          
+        </div>
+
+        <Separator className="my-6" />
+
+        {/* Área y Máquina */}
+        <AreaMachineSection
+          areas={areas}
+          areaId={areaId}
+          setAreaId={setAreaId}
+          onAreaCreated={(a)=> setAreas(prev => [...prev, a])}
+          maquinas={tmList}
+          tmId={tmId}
+          setTmId={setTmId}
+          onMaquinaCreated={(tm)=> setTmList(prev => [...prev, tm])}
+          disabledMachine={!areaId}
+        />
+
+        <Separator className="my-6" />
+
+        {/* Distribución y parámetros */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Distribución</h2>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Tipo de distribución</label>
+            <Select value={form.distribucion} onValueChange={(value) => setForm((p)=>({ ...p, distribucion: value }))}>
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-400 focus:ring-blue-300">
+                <SelectValue placeholder="Selecciona distribución" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="norm">Normal</SelectItem>
+                <SelectItem value="expon">Exponencial</SelectItem>
+                <SelectItem value="lognorm">Lognormal</SelectItem>
+                <SelectItem value="gamma">Gamma</SelectItem>
+                <SelectItem value="weibull_min">Weibull Min</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {paramsCount > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">Parámetros ({paramsCount})</label>
+              <div className="flex gap-2">
+                {Array.from({ length: paramsCount }).map((_, i) => (
+                  <Input
+                    key={i}
+                    value={form.parametros[i] || ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm((prev) => {
+                        const updated = [...prev.parametros];
+                        updated[i] = v;
+                        return { ...prev, parametros: updated };
+                      });
+                    }}
+                    placeholder={`Parámetro ${i + 1}`}
+                    className="bg-white border-gray-300 focus:border-blue-400 focus:ring-blue-300 w-1/3 text-sm"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-8 h-[250px] border border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 text-sm">
