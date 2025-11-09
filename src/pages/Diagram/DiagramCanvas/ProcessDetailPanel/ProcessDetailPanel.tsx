@@ -10,6 +10,8 @@ import type { AxiosError } from "axios";
 import { updateProceso } from "@/api/procesosApi";
 import { AreaMachineSection } from "./AreaMachineSection";
 import { RecipeSection } from "./RecipeSection";
+import { DependenciesSection } from "./DependenciesSection";
+
 
 // -------- Tipos locales ----------
 export interface ProcessData {
@@ -18,6 +20,7 @@ export interface ProcessData {
   orden?: number;
   distribucion?: string;
   parametros?: string | unknown;
+  diagramaId?: number;              // <-- agregar
 }
 type Unidad = "M2" | "PAR" | "KG" | "UNIDAD";
 type TipoMateria = "materia_prima" | "materia_procesada" | "otro";
@@ -28,6 +31,7 @@ type RecetaLineaVM = { materiaId: number | null; cantidad: string };
 
 interface ProcessDetailPanelProps {
   selectedProcess: ProcessData | null;
+  catalogId?: number; // id_catalogo del artículo activo
   onSaved?: () => void;
 }
 
@@ -92,11 +96,13 @@ const normalize = (arr: RecetaLineaVM[]) =>
     .sort((a, b) => (a.id_materia - b.id_materia) || (a.cantidad - b.cantidad));
 
 // -------- Componente ----------
-export function ProcessDetailPanel({ selectedProcess, onSaved }: ProcessDetailPanelProps) {
+export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: ProcessDetailPanelProps) {
   const [form, setForm] = useState<{ label: string; distribucion: string; parametros: string[] }>({ label: "", distribucion: "", parametros: [] });
   const [initialForm, setInitialForm] = useState(form);
   const [loading, setLoading] = useState(false);
 
+  // diagrama actual (para filtrar lookup de dependencias)
+  const [diagramId, setDiagramId] = useState<number | null>(null);
   // receta
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [entradas, setEntradas] = useState<RecetaLineaVM[]>([]);
@@ -130,6 +136,7 @@ export function ProcessDetailPanel({ selectedProcess, onSaved }: ProcessDetailPa
     };
     setForm(initial);
     setInitialForm(initial);
+    setDiagramId(selectedProcess.diagramaId ?? null);
 
     (async () => {
       try {
@@ -149,7 +156,11 @@ export function ProcessDetailPanel({ selectedProcess, onSaved }: ProcessDetailPa
         setAreas(ars);
         const currentTmId   = detalle?.tipo_maquina?.id_tipomaquina ?? null;
         const currentAreaId = detalle?.area?.id_area ?? detalle?.tipo_maquina?.id_area ?? null;
+        const currentDiagramId = detalle?.proceso?.id_diagrama;
         setTmId(currentTmId); setTmIdInitial(currentTmId); setAreaId(currentAreaId);
+        if (typeof currentDiagramId === "number") {
+          setDiagramId(currentDiagramId);
+        }
 
         const list = await apiGetTiposMaquinas(currentAreaId ?? undefined);
         setTmList(list); setTmListAreaId(currentAreaId ?? null);
@@ -284,6 +295,21 @@ export function ProcessDetailPanel({ selectedProcess, onSaved }: ProcessDetailPa
           />
           
         </div>
+
+        <Separator className="my-6" />
+
+        {typeof catalogId === "number" && diagramId != null ? (
+          <DependenciesSection
+            procesoId={selectedProcess.procesoId!}
+            diagramaIdActual={diagramId}
+            catalogoIdActual={catalogId}
+            onSaved={onSaved}
+          />
+        ) : (
+          <div className="text-sm text-gray-500">
+            Dependencias: selecciona un artículo y abre un proceso para habilitar la búsqueda entre otros diagramas del mismo artículo.
+          </div>
+        )}
 
         <Separator className="my-6" />
 

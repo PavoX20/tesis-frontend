@@ -7,7 +7,6 @@ import { Loader2 } from "lucide-react";
 import { getDiagramasDetalle } from "@/api/diagramaApi";
 import { createProceso } from "@/api/procesosApi";
 
-
 export default function DiagramCanvas({ productId }: { productId: number }) {
   const [nodes, setNodes] = useState<Node<ProcessData>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -62,6 +61,7 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
               typeof p.parametros === "string"
                 ? p.parametros
                 : JSON.stringify(p.parametros ?? []),
+            diagramaId: principal.id_diagrama,
           },
           draggable: false,
           selectable: true,
@@ -117,6 +117,7 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
                 typeof p.parametros === "string"
                   ? p.parametros
                   : JSON.stringify(p.parametros ?? []),
+              diagramaId: sub.id_diagrama,
             },
             draggable: false,
             selectable: true,
@@ -264,6 +265,7 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
       <div className="w-1/2 p-6 overflow-y-auto bg-blue-50">
         <ProcessDetailPanel
           selectedProcess={selectedProcess}
+          catalogId={productId}
           onSaved={async () => {
             const updatedNodes = await fetchDiagram();
             if (selectedProcess?.procesoId && updatedNodes) {

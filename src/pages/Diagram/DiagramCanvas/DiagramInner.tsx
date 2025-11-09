@@ -9,12 +9,15 @@ import {
 import "@xyflow/react/dist/style.css";
 import { CustomNode } from "./CustomNode";
 
+
+
 export interface ProcessData extends Record<string, unknown> {
   label: string;
   procesoId?: number;
   orden?: number;
   distribucion?: string;
   parametros?: string;
+  diagramaId?: number; // id del diagrama al que pertenece el proceso
 }
 
 type OnNodeClick = (e: React.MouseEvent, node: Node<ProcessData>) => void;
@@ -29,10 +32,9 @@ function TitleNode({ data }: { data: { label: string } }) {
   const isSubdiagram = data.label?.toLowerCase().includes("subdiagrama");
   return (
     <div
-      className={`text-xl ${
+      className={`text-xl cursor-pointer hover:underline ${
         isSubdiagram ? "font-normal text-blue-600" : "font-semibold text-blue-700"
       }`}
-
       style={{ width: 130, textAlign: "center" }}
     >
       {data.label}
