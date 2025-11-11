@@ -44,3 +44,12 @@ export const getProcesosPorDiagrama = async (idDiagrama: number) => {
   const res = await axiosClient.get(`/procesos/${idDiagrama}`);
   return res.data;
 };
+
+
+export async function updateProcesoTipo(
+  id: number,
+  payload: { tipo: "NORMAL" | "ALMACENAMIENTO" }
+) {
+  const res = await axiosClient.patch(`/procesos/${id}/tipo`, payload);
+  return res.data;
+}

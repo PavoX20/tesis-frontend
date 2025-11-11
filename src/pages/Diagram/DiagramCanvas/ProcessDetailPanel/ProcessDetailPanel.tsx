@@ -7,7 +7,7 @@ import { Select, SelectItem, SelectTrigger, SelectContent, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import type { AxiosError } from "axios";
-import { updateProceso } from "@/api/procesosApi";
+import { updateProceso, updateProcesoTipo } from "@/api/procesosApi";
 import { AreaMachineSection } from "./AreaMachineSection";
 import { RecipeSection } from "./RecipeSection";
 import { DependenciesSection } from "./DependenciesSection";
@@ -118,6 +118,9 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
   const [tmIdInitial, setTmIdInitial] = useState<number | null>(null);
   const [tmListAreaId, setTmListAreaId] = useState<number | null>(null);
   const prevAreaIdRef = useRef<number | null>(null);
+  // tipo de proceso (NORMAL | ALMACENAMIENTO)
+  const [tipo, setTipo] = useState<"NORMAL" | "ALMACENAMIENTO">("NORMAL");
+  const [tipoInitial, setTipoInitial] = useState<"NORMAL" | "ALMACENAMIENTO">("NORMAL");
 
   const paramsCount = PARAMS_COUNT[form.distribucion] || 0;
 
@@ -161,6 +164,9 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
         if (typeof currentDiagramId === "number") {
           setDiagramId(currentDiagramId);
         }
+        const currentTipo = (detalle?.proceso?.tipo ?? "NORMAL") as "NORMAL" | "ALMACENAMIENTO";
+        setTipo(currentTipo);
+        setTipoInitial(currentTipo);
 
         const list = await apiGetTiposMaquinas(currentAreaId ?? undefined);
         setTmList(list); setTmListAreaId(currentAreaId ?? null);
@@ -210,7 +216,8 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
     form.label.trim() !== "" && form.distribucion.trim() !== "";
 
   const maquinaChanged = tmId !== tmIdInitial;
-  const canSave = (!!selectedProcess?.procesoId) && (formChanged || recetaChanged || maquinaChanged);
+  const tipoChanged = tipo !== tipoInitial;
+  const canSave = (!!selectedProcess?.procesoId) && (formChanged || recetaChanged || maquinaChanged || tipoChanged);
 
   const handleSave = async () => {
     if (!selectedProcess?.procesoId) return;
@@ -233,6 +240,10 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
       if (maquinaChanged) {
         await apiPatchProcesoMaquina(selectedProcess.procesoId, tmId ?? null);
         setTmIdInitial(tmId ?? null);
+      }
+      if (tipoChanged) {
+        await updateProcesoTipo(selectedProcess.procesoId, { tipo });
+        setTipoInitial(tipo);
       }
       onSaved?.();
     } catch (err) {
@@ -325,6 +336,28 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
           onMaquinaCreated={(tm)=> setTmList(prev => [...prev, tm])}
           disabledMachine={!areaId}
         />
+
+        <Separator className="my-6" />
+
+        {/* Tipo de Proceso */}
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold">Tipo de Proceso</h2>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Tipo</label>
+            <Select
+              value={tipo}
+              onValueChange={(v) => setTipo(v as "NORMAL" | "ALMACENAMIENTO")}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-400 focus:ring-blue-300 max-w-xs">
+                <SelectValue placeholder="Selecciona tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NORMAL">Normal</SelectItem>
+                <SelectItem value="ALMACENAMIENTO">Almacenamiento</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
         <Separator className="my-6" />
 
