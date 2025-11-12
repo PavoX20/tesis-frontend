@@ -1,6 +1,21 @@
+import { getProcesosLookup } from "@/api/procesosApi";
 import {
-  getProcesosPorDiagrama
-} from "@/api/procesosApi";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getProcesosPorDiagrama } from "@/api/procesosApi";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,16 +72,20 @@ export function AddProcessDialog({
     null
   );
 
+  const [showAllNames, setShowAllNames] = useState(false);
+  const [processNames, setProcessNames] = useState<string[]>([]);
+  const [comboOpen, setComboOpen] = useState(false);
+
+  // Cargar diagramas del catálogo
+  // dentro de AddProcessDialog
+
   // Cargar diagramas del catálogo
   useEffect(() => {
     const fetchDiagramas = async () => {
       try {
-        const res = await getDiagramasPorCatalogo(productId);
-        const filtered = res.diagramas || [];
-        setDiagramas(filtered);
-
-        // Detectar si ya existe uno principal
-        const hasPrincipal = filtered.some((d: any) => d.es_principal === true);
+        const list = await getDiagramasPorCatalogo(productId); // ← ya viene normalizado (array)
+        setDiagramas(list);
+        const hasPrincipal = list.some((d: any) => Boolean(d.es_principal));
         setIsPrincipalAllowed(!hasPrincipal);
       } catch (error) {
         console.error("Error cargando diagramas:", error);
@@ -75,15 +94,39 @@ export function AddProcessDialog({
       }
     };
 
-    if (open || creating) fetchDiagramas(); // <--- importante refrescar también tras crear
-  }, [open, productId, creating]);
+    if (open) fetchDiagramas();
+  }, [open, productId]);
+
+  useEffect(() => {
+  const loadNames = async () => {
+    try {
+      const params: any = { limit: 100 };
+      if (!showAllNames) params.catalogo_id = productId;
+
+      const rows = await getProcesosLookup(params); // ← ya es ProcesoLookupRow[]
+
+      const names: string[] = Array.from(
+        new Set(
+          rows
+            .map(r => r.nombre_proceso)
+            .filter((s): s is string => Boolean(s))
+        )
+      ).sort((a, b) => a.localeCompare(b, "es"));
+
+      setProcessNames(names);
+    } catch {
+      setProcessNames([]);
+    }
+  };
+  loadNames();
+}, [showAllNames, productId]);
 
   const handleCreateDiagrama = async (asPrincipal: boolean) => {
     if (!nuevoDiagramaNombre.trim()) return;
     setCreating(true);
     setCreateError(null);
     try {
-      const data = {
+      const payload = {
         nombre: nuevoDiagramaNombre.trim(),
         descripcion: asPrincipal
           ? "Flujo principal del producto"
@@ -91,17 +134,12 @@ export function AddProcessDialog({
         id_catalogo: productId,
         es_principal: asPrincipal,
       };
-      const res = await createDiagrama(data);
-      const newDiagram = res.data;
-
+      const newDiagram = await createDiagrama(payload); // ← ya normalizado (objeto diagrama)
       setDiagramas((prev) => [...prev, newDiagram]);
       setSelectedDiagrama(newDiagram.id_diagrama);
       setNuevoDiagramaNombre("");
 
-      // Si creamos el principal, deshabilitar su creación a futuro
-      if (asPrincipal) {
-        setIsPrincipalAllowed(false);
-      }
+      if (asPrincipal) setIsPrincipalAllowed(false);
     } catch (e: any) {
       setCreateError(e?.response?.data?.detail || "Error creando diagrama");
     } finally {
@@ -116,25 +154,25 @@ export function AddProcessDialog({
     !selectedDiagrama;
 
   useEffect(() => {
-  const fetchProcesos = async () => {
-    if (!selectedDiagrama) {
-      setSiguientePosicion(null);
-      setInsertPos("");
-      return;
-    }
-    try {
-      const res = await getProcesosPorDiagrama(selectedDiagrama);
-      const procesos = res.procesos || [];
-      const siguiente = procesos.length + 1;
-      setSiguientePosicion(siguiente);
-      setInsertPos(siguiente.toString()); // 🔹 sincroniza visualmente
-    } catch {
-      setSiguientePosicion(1);
-      setInsertPos("1"); // 🔹 asegura valor correcto en error o vacío
-    }
-  };
-  fetchProcesos();
-}, [selectedDiagrama, open]);
+    const fetchProcesos = async () => {
+      if (!selectedDiagrama) {
+        setSiguientePosicion(null);
+        setInsertPos("");
+        return;
+      }
+      try {
+        const res = await getProcesosPorDiagrama(selectedDiagrama);
+        const procesos = res.procesos || [];
+        const siguiente = procesos.length + 1;
+        setSiguientePosicion(siguiente);
+        setInsertPos(siguiente.toString()); // 🔹 sincroniza visualmente
+      } catch {
+        setSiguientePosicion(1);
+        setInsertPos("1"); // 🔹 asegura valor correcto en error o vacío
+      }
+    };
+    fetchProcesos();
+  }, [selectedDiagrama, open]);
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -245,21 +283,71 @@ export function AddProcessDialog({
           </div>
 
           {/* Nombre y posición */}
+          {/* Nombre (combobox) y botón para alternar nombres */}
           <div className="grid grid-cols-4 items-center gap-4 mt-4">
-            <Label htmlFor="nodeName" className="text-right">
-              Nombre
-            </Label>
-            <Input
-              id="nodeName"
-              className="col-span-3"
-              placeholder={
-                selectedDiagrama && siguientePosicion
-                  ? `Proceso ${siguientePosicion}`
-                  : "Nombre del proceso"
-              }
-              value={newNodeName}
-              onChange={(e) => setNewNodeName(e.target.value)}
-            />
+            <Label className="text-right">Nombre</Label>
+            <div className="col-span-3 flex flex-col gap-2">
+              <Popover open={comboOpen} onOpenChange={setComboOpen} modal={false}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={comboOpen}
+                    className="w-full justify-between"
+                    title="Selecciona un nombre de proceso existente o escribe uno nuevo"
+                  >
+                    {newNodeName || "Selecciona o escribe un nombre"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-0 z-50"
+                  onWheelCapture={(e) => e.stopPropagation()}
+                >
+                  <Command>
+                    <CommandInput placeholder="Buscar nombre..." />
+                    <CommandEmpty>No hay coincidencias.</CommandEmpty>
+                    <ScrollArea className="max-h-64">
+                      <CommandList>
+                        <CommandGroup>
+                          {processNames.map((name) => (
+                            <CommandItem
+                              key={name}
+                              onSelect={() => {
+                                setNewNodeName(name);
+                                setComboOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  newNodeName === name ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </ScrollArea>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <Button
+                type="button"
+                size="sm"
+                variant={showAllNames ? "default" : "secondary"}
+                className={`self-start px-3 py-1 text-xs ${showAllNames ? "bg-blue-600 text-white hover:bg-blue-700" : ""}`}
+                onClick={() => setShowAllNames((v) => !v)}
+                title={
+                  showAllNames
+                    ? "Mostrar solo de este producto"
+                    : "Mostrar todos los procesos"
+                }
+              >
+                {showAllNames ? "Solo este producto" : "Mostrar todos"}
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">

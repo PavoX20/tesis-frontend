@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import Diagrama from "@/pages/Diagram/Diagram";
+import DatosPage from "@/pages/Datos/DatosPages";
 
 const tabs = [
   { id: "diagrama", label: "Diagrama" },
@@ -56,11 +57,9 @@ export default function MainLayout() {
                 </TabsContent>
                 <TabsContent
                   value="datos"
-                  className="rounded-xl bg-blue-50 p-0 min-h-[600px] shadow-inner"
+                  className="rounded-xl bg-white p-0 min-h-[600px] shadow-inner"
                 >
-                  <p className="text-center text-gray-700 text-lg">
-                    Contenido de Datos
-                  </p>
+                  <DatosPage />
                 </TabsContent>
                 <TabsContent
                   value="simulacion"
