@@ -285,7 +285,7 @@ export function AddProcessDialog({
           {/* Nombre y posición */}
           {/* Nombre (combobox) y botón para alternar nombres */}
           <div className="grid grid-cols-4 items-center gap-4 mt-4">
-            <Label className="text-right">Nombre</Label>
+            <Label className="text-right">Nombre del Proceso</Label>
             <div className="col-span-3 flex flex-col gap-2">
               <Popover open={comboOpen} onOpenChange={setComboOpen} modal={false}>
                 <PopoverTrigger asChild>
@@ -345,7 +345,7 @@ export function AddProcessDialog({
                     : "Mostrar todos los procesos"
                 }
               >
-                {showAllNames ? "Solo este producto" : "Mostrar todos"}
+                {showAllNames ? "Mostrar solo de este producto" : "Mostrar todos los procesos"}
               </Button>
             </div>
           </div>
