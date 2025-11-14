@@ -1,8 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { X, Plus, ChevronDown, Loader2, Link as LinkIcon } from "lucide-react";
 import {
   getDependenciasPorProceso,
@@ -18,9 +29,12 @@ type Props = {
   onSaved?: () => void;
 };
 
-
-
-export function DependenciesSection({ procesoId, diagramaIdActual, catalogoIdActual, onSaved }: Props) {
+export function DependenciesSection({
+  procesoId,
+  diagramaIdActual,
+  catalogoIdActual,
+  onSaved,
+}: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +74,9 @@ export function DependenciesSection({ procesoId, diagramaIdActual, catalogoIdAct
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [procesoId]);
 
   // filtros para lookup: mismo artículo, excluir proceso actual
@@ -89,10 +105,22 @@ export function DependenciesSection({ procesoId, diagramaIdActual, catalogoIdAct
         // Solo procesos de OTROS diagramas del mismo artículo
         const filtered = items.filter((it) => {
           if (it.id_proceso === procesoId) return false;
-          if (diagramaIdActual != null && it.id_diagrama === diagramaIdActual) return false; // excluir mismo diagrama
+
+          // 🔹 NO mostrar procesos sin diagrama asignado
+          if (it.id_diagrama == null) return false;
+
+          // 🔹 Opcional: seguir excluyendo procesos del mismo diagrama actual,
+          //     para que los predecesores vengan solo de otros diagramas
+          if (diagramaIdActual != null && it.id_diagrama === diagramaIdActual)
+            return false;
+
           if (selectedIds.has(it.id_proceso)) return false;
           if (successorsSet.has(it.id_proceso)) return false;
-          if (catalogoIdActual != null && it.catalogo_id !== catalogoIdActual) return false;
+
+          // 🔹 Aseguramos que sea del mismo artículo / catálogo
+          if (catalogoIdActual != null && it.catalogo_id !== catalogoIdActual)
+            return false;
+
           return true;
         });
 
@@ -104,8 +132,18 @@ export function DependenciesSection({ procesoId, diagramaIdActual, catalogoIdAct
       }
     }, 280);
 
-    return () => { if (debRef.current) window.clearTimeout(debRef.current); };
-  }, [effectiveFilters, predecesores, sucesores, open, procesoId, diagramaIdActual, catalogoIdActual]);
+    return () => {
+      if (debRef.current) window.clearTimeout(debRef.current);
+    };
+  }, [
+    effectiveFilters,
+    predecesores,
+    sucesores,
+    open,
+    procesoId,
+    diagramaIdActual,
+    catalogoIdActual,
+  ]);
 
   const addPred = (item: ProcesoLookupItem) => {
     setPredecesores((prev) => [...prev, item]);
@@ -116,28 +154,28 @@ export function DependenciesSection({ procesoId, diagramaIdActual, catalogoIdAct
     setPredecesores((prev) => prev.filter((p) => p.id_proceso !== id));
   };
 
-const handleSave = async () => {
-  setSaving(true);
-  setError(null);
-  try {
-    await putPredecesores(
-      procesoId,
-      predecesores.map((p) => p.id_proceso),
-      false // permitir entre diagramas del mismo artículo
-    );
-    onSaved?.();
-  } catch (e: any) {
-    const detail =
-      e?.response?.data?.detail ??
-      e?.response?.data ??
-      e?.message ??
-      "Error al guardar dependencias.";
-    setError(typeof detail === "string" ? detail : JSON.stringify(detail));
-    console.error("PUT /dependencias/predecesores error:", e?.response ?? e);
-  } finally {
-    setSaving(false);
-  }
-};
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await putPredecesores(
+        procesoId,
+        predecesores.map((p) => p.id_proceso),
+        false // permitir entre diagramas del mismo artículo
+      );
+      onSaved?.();
+    } catch (e: any) {
+      const detail =
+        e?.response?.data?.detail ??
+        e?.response?.data ??
+        e?.message ??
+        "Error al guardar dependencias.";
+      setError(typeof detail === "string" ? detail : JSON.stringify(detail));
+      console.error("PUT /dependencias/predecesores error:", e?.response ?? e);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -154,10 +192,20 @@ const handleSave = async () => {
       ) : (
         <>
           <div className="flex flex-wrap gap-2">
-            {predecesores.length === 0 && <span className="text-sm text-gray-500 italic">Sin predecesores</span>}
+            {predecesores.length === 0 && (
+              <span className="text-sm text-gray-500 italic">
+                Sin predecesores
+              </span>
+            )}
             {predecesores.map((p) => (
-              <Badge key={p.id_proceso} variant="secondary" className="flex items-center gap-2">
-                <span className="truncate max-w-[220px]">{p.nombre_proceso}</span>
+              <Badge
+                key={p.id_proceso}
+                variant="secondary"
+                className="flex items-center gap-2"
+              >
+                <span className="truncate max-w-[220px]">
+                  {p.nombre_proceso}
+                </span>
                 <button
                   className="text-gray-500 hover:text-gray-700"
                   onClick={() => removePred(p.id_proceso)}
@@ -180,7 +228,11 @@ const handleSave = async () => {
               </PopoverTrigger>
               <PopoverContent className="p-0 w-[420px]">
                 <Command shouldFilter={false}>
-                  <CommandInput placeholder="Buscar proceso…" value={query} onValueChange={setQuery} />
+                  <CommandInput
+                    placeholder="Buscar proceso…"
+                    value={query}
+                    onValueChange={setQuery}
+                  />
                   <CommandList>
                     <CommandEmpty>
                       {optLoading ? (
@@ -188,7 +240,9 @@ const handleSave = async () => {
                           <Loader2 className="h-4 w-4 animate-spin" /> Buscando…
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500 p-2">Sin resultados</span>
+                        <span className="text-sm text-gray-500 p-2">
+                          Sin resultados
+                        </span>
                       )}
                     </CommandEmpty>
                     <CommandGroup>
@@ -199,9 +253,13 @@ const handleSave = async () => {
                           className="flex items-center justify-between"
                         >
                           <div className="flex flex-col">
-                            <span className="font-medium">{opt.nombre_proceso}</span>
+                            <span className="font-medium">
+                              {opt.nombre_proceso}
+                            </span>
                             <span className="text-xs text-gray-500">
-                              {opt.diagrama_nombre ?? `Diagrama ${opt.id_diagrama}`} · {opt.tipo ?? "NORMAL"}
+                              {opt.diagrama_nombre ??
+                                `Diagrama ${opt.id_diagrama}`}{" "}
+                              · {opt.tipo ?? "NORMAL"}
                             </span>
                           </div>
                         </CommandItem>
@@ -212,7 +270,11 @@ const handleSave = async () => {
               </PopoverContent>
             </Popover>
 
-            <Button onClick={handleSave} disabled={saving} className="bg-blue-600 text-white hover:bg-blue-700">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Guardar dependencias
             </Button>

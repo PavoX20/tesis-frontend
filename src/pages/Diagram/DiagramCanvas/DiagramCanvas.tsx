@@ -5,7 +5,11 @@ import { AddProcessDialog } from "./AddProcessDialog";
 import { ProcessDetailPanel } from "./ProcessDetailPanel/ProcessDetailPanel";
 import { Loader2 } from "lucide-react";
 import { getDiagramasDetalle } from "@/api/diagramaApi";
-import { createProceso } from "@/api/procesosApi";
+import {
+  createProceso,
+  getProcesosLookup,
+  updateProceso,
+} from "@/api/procesosApi";
 
 export default function DiagramCanvas({ productId }: { productId: number }) {
   const [nodes, setNodes] = useState<Node<ProcessData>[]>([]);
@@ -15,7 +19,9 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedProcess, setSelectedProcess] = useState<ProcessData | null>(null);
+  const [selectedProcess, setSelectedProcess] = useState<ProcessData | null>(
+    null
+  );
 
   const fetchDiagram = async (): Promise<Node<ProcessData>[]> => {
     setLoading(true);
@@ -203,22 +209,59 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
   }, [productId]);
 
   const handleAddNode = async (idDiagrama: number | null) => {
-    if (!newNodeName.trim() || !idDiagrama) return;
+  if (!newNodeName.trim() || !idDiagrama) return;
 
-    const procesoData = {
-      nombre_proceso: newNodeName.trim(),
-      id_diagrama: idDiagrama,
-      orden: Number(insertPos),
-      parametros: "[]",
-      distribucion: "norm",
-    };
+  const nombre = newNodeName.trim();
+  const orden = Number(insertPos) || 1;
 
-    await createProceso(procesoData);
+  try {
+    // 🔹 Misma consulta que usa el combobox, respetando el límite del back
+    const lookup = await getProcesosLookup({
+      catalogo_id: productId,
+      limit: 100, // 👈 MUY IMPORTANTE: <= límite que acepta el backend
+    });
+
+    const lowerNombre = nombre.toLocaleLowerCase("es");
+
+    // 🔍 Procesos de este catálogo con ese mismo nombre
+    const candidatos = lookup.filter(
+      (p) =>
+        (p.nombre_proceso ?? "").toLocaleLowerCase("es") === lowerNombre
+    );
+
+    // Preferimos uno sin diagrama todavía; si no, el primero que coincida
+    const existing =
+      candidatos.find((p) => p.id_diagrama == null) ?? candidatos[0];
+
+    if (existing) {
+      // ♻️ Reutilizar proceso existente: solo lo colgamos del diagrama
+      await updateProceso(existing.id_proceso, {
+        id_diagrama: idDiagrama,
+        orden,
+      });
+    } else {
+      // ➕ No existe ninguno para este producto → creamos uno nuevo
+      await createProceso({
+        nombre_proceso: nombre,
+        id_diagrama: idDiagrama,
+        orden,
+        parametros: "[]",
+        distribucion: "norm",
+      });
+    }
+
+    // Refrescamos diagrama y limpiamos estado
     await fetchDiagram();
     setNewNodeName("");
     setInsertPos("1");
     setDialogOpen(false);
-  };
+  } catch (err: any) {
+    console.error(
+      "Error al agregar proceso al diagrama:",
+      err?.response?.data || err
+    );
+  }
+};
 
   if (loading)
     return (

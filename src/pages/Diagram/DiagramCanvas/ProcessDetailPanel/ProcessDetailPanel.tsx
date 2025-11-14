@@ -3,7 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import axiosClient from "@/api/axiosClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectItem, SelectTrigger, SelectContent, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectItem,
+  SelectTrigger,
+  SelectContent,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import type { AxiosError } from "axios";
@@ -11,7 +17,7 @@ import { updateProceso, updateProcesoTipo } from "@/api/procesosApi";
 import { AreaMachineSection } from "./AreaMachineSection";
 import { RecipeSection } from "./RecipeSection";
 import { DependenciesSection } from "./DependenciesSection";
-
+import { ProcessDistributionCard } from "./ProcessDistributionCard";
 
 // -------- Tipos locales ----------
 export interface ProcessData {
@@ -20,13 +26,31 @@ export interface ProcessData {
   orden?: number;
   distribucion?: string;
   parametros?: string | unknown;
-  diagramaId?: number;              // <-- agregar
+  diagramaId?: number; // <-- agregar
 }
 type Unidad = "M2" | "PAR" | "KG" | "UNIDAD";
 type TipoMateria = "materia_prima" | "materia_procesada" | "otro";
-type Materia = { id_materia: number; nombre: string; unidad: Unidad; costo: number; tipo: TipoMateria; };
-type Area = { id_area: number; nombre: string; tipo: "CORTE" | "COSTURA" | "ENSAMBLE" | "OTRO"; personal: number; restriccion: "MIXTO" | "PLANTILLA" | "ESCOLAR"; };
-type TipoMaquina = { id_tipomaquina: number; nombre_maquina: string; cantidad_maquinas: number; personal_max: number; id_area: number | null; };
+type Materia = {
+  id_materia: number;
+  nombre: string;
+  unidad: Unidad;
+  costo: number;
+  tipo: TipoMateria;
+};
+type Area = {
+  id_area: number;
+  nombre: string;
+  tipo: "CORTE" | "COSTURA" | "ENSAMBLE" | "OTRO";
+  personal: number;
+  restriccion: "MIXTO" | "PLANTILLA" | "ESCOLAR";
+};
+type TipoMaquina = {
+  id_tipomaquina: number;
+  nombre_maquina: string;
+  cantidad_maquinas: number;
+  personal_max: number;
+  id_area: number | null;
+};
 type RecetaLineaVM = { materiaId: number | null; cantidad: string };
 
 interface ProcessDetailPanelProps {
@@ -37,12 +61,24 @@ interface ProcessDetailPanelProps {
 
 // -------- Mini API ----------
 async function apiGetMaterias(limit = 1000): Promise<Materia[]> {
-  const { data } = await axiosClient.get<Materia[]>("/materias", { params: { limit } });
+  const { data } = await axiosClient.get<Materia[]>("/materias", {
+    params: { limit },
+  });
   return Array.isArray(data) ? data : [];
 }
 async function apiGetRecetaByProceso(id_proceso: number): Promise<{
-  entradas: Array<{ id_materia: number; cantidad: number; materia_nombre: string; unidad: Unidad }>;
-  salidas: Array<{ id_materia: number; cantidad: number; materia_nombre: string; unidad: Unidad }>;
+  entradas: Array<{
+    id_materia: number;
+    cantidad: number;
+    materia_nombre: string;
+    unidad: Unidad;
+  }>;
+  salidas: Array<{
+    id_materia: number;
+    cantidad: number;
+    materia_nombre: string;
+    unidad: Unidad;
+  }>;
 }> {
   const { data } = await axiosClient.get(`/receta/proceso/${id_proceso}`);
   return {
@@ -52,23 +88,36 @@ async function apiGetRecetaByProceso(id_proceso: number): Promise<{
 }
 async function apiPutRecetaByProceso(
   id_proceso: number,
-  payload: { entradas: Array<{ id_materia: number; cantidad: number }>; salidas: Array<{ id_materia: number; cantidad: number }> }
+  payload: {
+    entradas: Array<{ id_materia: number; cantidad: number }>;
+    salidas: Array<{ id_materia: number; cantidad: number }>;
+  }
 ) {
-  const { data } = await axiosClient.put(`/receta/proceso/${id_proceso}`, payload);
+  const { data } = await axiosClient.put(
+    `/receta/proceso/${id_proceso}`,
+    payload
+  );
   return data;
 }
 async function apiGetAreas(): Promise<Area[]> {
   const { data } = await axiosClient.get<Area[]>("/areas/");
   return Array.isArray(data) ? data : [];
 }
-async function apiGetTiposMaquinas(areaId?: number | null): Promise<TipoMaquina[]> {
+async function apiGetTiposMaquinas(
+  areaId?: number | null
+): Promise<TipoMaquina[]> {
   const { data } = await axiosClient.get<TipoMaquina[]>("/tipos-maquinas/", {
     params: typeof areaId === "number" ? { area_id: areaId } : {},
   });
   return Array.isArray(data) ? data : [];
 }
-async function apiPatchProcesoMaquina(procesoId: number, id_tipomaquina: number | null) {
-  const { data } = await axiosClient.patch(`/procesos/${procesoId}/maquina`, { id_tipomaquina });
+async function apiPatchProcesoMaquina(
+  procesoId: number,
+  id_tipomaquina: number | null
+) {
+  const { data } = await axiosClient.patch(`/procesos/${procesoId}/maquina`, {
+    id_tipomaquina,
+  });
   return data as { id_proceso: number; id_tipomaquina: number | null };
 }
 async function apiGetProcesoDetalle(procesoId: number): Promise<{
@@ -81,23 +130,50 @@ async function apiGetProcesoDetalle(procesoId: number): Promise<{
 }
 
 // -------- Helpers ----------
-const PARAMS_COUNT: Record<string, number> = { norm: 2, expon: 2, lognorm: 3, gamma: 3, weibull_min: 3 };
+const PARAMS_COUNT: Record<string, number> = {
+  norm: 2,
+  expon: 2,
+  lognorm: 3,
+  gamma: 3,
+  weibull_min: 3,
+};
 const parseParams = (raw: unknown): string[] => {
   if (Array.isArray(raw)) return raw.map(String);
   if (typeof raw === "string") {
-    try { const v = JSON.parse(raw); return Array.isArray(v) ? v.map(String) : []; } catch { return []; }
+    try {
+      const v = JSON.parse(raw);
+      return Array.isArray(v) ? v.map(String) : [];
+    } catch {
+      return [];
+    }
   }
   return [];
 };
 const normalize = (arr: RecetaLineaVM[]) =>
   (Array.isArray(arr) ? arr : [])
-    .map(a => ({ id_materia: typeof a.materiaId === "number" ? a.materiaId : NaN, cantidad: Number(a.cantidad) }))
-    .filter(a => Number.isFinite(a.id_materia) && Number.isFinite(a.cantidad) && a.cantidad > 0)
-    .sort((a, b) => (a.id_materia - b.id_materia) || (a.cantidad - b.cantidad));
+    .map((a) => ({
+      id_materia: typeof a.materiaId === "number" ? a.materiaId : NaN,
+      cantidad: Number(a.cantidad),
+    }))
+    .filter(
+      (a) =>
+        Number.isFinite(a.id_materia) &&
+        Number.isFinite(a.cantidad) &&
+        a.cantidad > 0
+    )
+    .sort((a, b) => a.id_materia - b.id_materia || a.cantidad - b.cantidad);
 
 // -------- Componente ----------
-export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: ProcessDetailPanelProps) {
-  const [form, setForm] = useState<{ label: string; distribucion: string; parametros: string[] }>({ label: "", distribucion: "", parametros: [] });
+export function ProcessDetailPanel({
+  selectedProcess,
+  catalogId,
+  onSaved,
+}: ProcessDetailPanelProps) {
+  const [form, setForm] = useState<{
+    label: string;
+    distribucion: string;
+    parametros: string[];
+  }>({ label: "", distribucion: "", parametros: [] });
   const [initialForm, setInitialForm] = useState(form);
   const [loading, setLoading] = useState(false);
 
@@ -120,12 +196,20 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
   const prevAreaIdRef = useRef<number | null>(null);
   // tipo de proceso (NORMAL | ALMACENAMIENTO)
   const [tipo, setTipo] = useState<"NORMAL" | "ALMACENAMIENTO">("NORMAL");
-  const [tipoInitial, setTipoInitial] = useState<"NORMAL" | "ALMACENAMIENTO">("NORMAL");
+  const [tipoInitial, setTipoInitial] = useState<"NORMAL" | "ALMACENAMIENTO">(
+    "NORMAL"
+  );
 
   const paramsCount = PARAMS_COUNT[form.distribucion] || 0;
 
   useEffect(() => {
-    setForm(prev => ({ ...prev, parametros: Array.from({ length: paramsCount }, (_, i) => prev.parametros[i] ?? "") }));
+    setForm((prev) => ({
+      ...prev,
+      parametros: Array.from(
+        { length: paramsCount },
+        (_, i) => prev.parametros[i] ?? ""
+      ),
+    }));
   }, [paramsCount]);
 
   // carga por proceso
@@ -151,29 +235,50 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
         ]);
 
         setMaterias(mats);
-        const newEntradas = (receta.entradas || []).map(r => ({ materiaId: r.id_materia, cantidad: String(r.cantidad ?? "") }));
-        const newSalidas  = (receta.salidas  || []).map(r => ({ materiaId: r.id_materia, cantidad: String(r.cantidad ?? "") }));
-        setEntradas(newEntradas); setSalidas(newSalidas);
-        setInitEntradas(newEntradas); setInitSalidas(newSalidas);
+        const newEntradas = (receta.entradas || []).map((r) => ({
+          materiaId: r.id_materia,
+          cantidad: String(r.cantidad ?? ""),
+        }));
+        const newSalidas = (receta.salidas || []).map((r) => ({
+          materiaId: r.id_materia,
+          cantidad: String(r.cantidad ?? ""),
+        }));
+        setEntradas(newEntradas);
+        setSalidas(newSalidas);
+        setInitEntradas(newEntradas);
+        setInitSalidas(newSalidas);
 
         setAreas(ars);
-        const currentTmId   = detalle?.tipo_maquina?.id_tipomaquina ?? null;
-        const currentAreaId = detalle?.area?.id_area ?? detalle?.tipo_maquina?.id_area ?? null;
+        const currentTmId = detalle?.tipo_maquina?.id_tipomaquina ?? null;
+        const currentAreaId =
+          detalle?.area?.id_area ?? detalle?.tipo_maquina?.id_area ?? null;
         const currentDiagramId = detalle?.proceso?.id_diagrama;
-        setTmId(currentTmId); setTmIdInitial(currentTmId); setAreaId(currentAreaId);
+        setTmId(currentTmId);
+        setTmIdInitial(currentTmId);
+        setAreaId(currentAreaId);
         if (typeof currentDiagramId === "number") {
           setDiagramId(currentDiagramId);
         }
-        const currentTipo = (detalle?.proceso?.tipo ?? "NORMAL") as "NORMAL" | "ALMACENAMIENTO";
+        const currentTipo = (detalle?.proceso?.tipo ?? "NORMAL") as
+          | "NORMAL"
+          | "ALMACENAMIENTO";
         setTipo(currentTipo);
         setTipoInitial(currentTipo);
 
         const list = await apiGetTiposMaquinas(currentAreaId ?? undefined);
-        setTmList(list); setTmListAreaId(currentAreaId ?? null);
+        setTmList(list);
+        setTmListAreaId(currentAreaId ?? null);
       } catch {
-        setMaterias([]); setEntradas([]); setSalidas([]);
-        setInitEntradas([]); setInitSalidas([]);
-        setAreas([]); setTmList([]); setAreaId(null); setTmId(null); setTmIdInitial(null);
+        setMaterias([]);
+        setEntradas([]);
+        setSalidas([]);
+        setInitEntradas([]);
+        setInitSalidas([]);
+        setAreas([]);
+        setTmList([]);
+        setAreaId(null);
+        setTmId(null);
+        setTmIdInitial(null);
       }
     })();
   }, [selectedProcess?.procesoId]);
@@ -186,7 +291,8 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
       setTmListAreaId(areaId ?? null);
     })();
 
-    if (prevAreaIdRef.current !== null && areaId !== prevAreaIdRef.current) setTmId(null);
+    if (prevAreaIdRef.current !== null && areaId !== prevAreaIdRef.current)
+      setTmId(null);
     prevAreaIdRef.current = areaId ?? null;
   }, [areaId]);
 
@@ -195,29 +301,42 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
     if (tmId == null || areaId == null) return;
     if (tmListAreaId !== areaId) return;
     if (tmList.length === 0) return;
-    const ok = tmList.some(m => m.id_tipomaquina === tmId && m.id_area === areaId);
+    const ok = tmList.some(
+      (m) => m.id_tipomaquina === tmId && m.id_area === areaId
+    );
     if (!ok) setTmId(null);
   }, [tmList, areaId, tmId, tmListAreaId]);
 
   // receta helpers
-  const addEntrada = () => setEntradas(l => [...l, { materiaId: null, cantidad: "" }]);
-  const addSalida  = () => setSalidas(l  => [...l, { materiaId: null, cantidad: "" }]);
-  const patchEntrada = (i:number, p:Partial<RecetaLineaVM>) => setEntradas(l=> l.map((x,idx)=> idx===i?{...x,...p}:x));
-  const patchSalida  = (i:number, p:Partial<RecetaLineaVM>) => setSalidas(l => l.map((x,idx)=> idx===i?{...x,...p}:x));
-  const removeEntrada = (i:number) => setEntradas(l=> l.filter((_,idx)=> idx!==i));
-  const removeSalida  = (i:number) => setSalidas(l => l.filter((_,idx)=> idx!==i));
+  const addEntrada = () =>
+    setEntradas((l) => [...l, { materiaId: null, cantidad: "" }]);
+  const addSalida = () =>
+    setSalidas((l) => [...l, { materiaId: null, cantidad: "" }]);
+  const patchEntrada = (i: number, p: Partial<RecetaLineaVM>) =>
+    setEntradas((l) => l.map((x, idx) => (idx === i ? { ...x, ...p } : x)));
+  const patchSalida = (i: number, p: Partial<RecetaLineaVM>) =>
+    setSalidas((l) => l.map((x, idx) => (idx === i ? { ...x, ...p } : x)));
+  const removeEntrada = (i: number) =>
+    setEntradas((l) => l.filter((_, idx) => idx !== i));
+  const removeSalida = (i: number) =>
+    setSalidas((l) => l.filter((_, idx) => idx !== i));
 
   const recetaChanged =
-    JSON.stringify(normalize(entradas)) !== JSON.stringify(normalize(initEntradas)) ||
-    JSON.stringify(normalize(salidas))  !== JSON.stringify(normalize(initSalidas));
+    JSON.stringify(normalize(entradas)) !==
+      JSON.stringify(normalize(initEntradas)) ||
+    JSON.stringify(normalize(salidas)) !==
+      JSON.stringify(normalize(initSalidas));
 
   const formChanged =
     JSON.stringify(form) !== JSON.stringify(initialForm) &&
-    form.label.trim() !== "" && form.distribucion.trim() !== "";
+    form.label.trim() !== "" &&
+    form.distribucion.trim() !== "";
 
   const maquinaChanged = tmId !== tmIdInitial;
   const tipoChanged = tipo !== tipoInitial;
-  const canSave = (!!selectedProcess?.procesoId) && (formChanged || recetaChanged || maquinaChanged || tipoChanged);
+  const canSave =
+    !!selectedProcess?.procesoId &&
+    (formChanged || recetaChanged || maquinaChanged || tipoChanged);
 
   const handleSave = async () => {
     if (!selectedProcess?.procesoId) return;
@@ -233,9 +352,11 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
       }
       if (recetaChanged) {
         await apiPutRecetaByProceso(selectedProcess.procesoId, {
-          entradas: normalize(entradas), salidas: normalize(salidas),
+          entradas: normalize(entradas),
+          salidas: normalize(salidas),
         });
-        setInitEntradas(entradas); setInitSalidas(salidas);
+        setInitEntradas(entradas);
+        setInitSalidas(salidas);
       }
       if (maquinaChanged) {
         await apiPatchProcesoMaquina(selectedProcess.procesoId, tmId ?? null);
@@ -248,14 +369,24 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
       onSaved?.();
     } catch (err) {
       const ax = err as AxiosError<any>;
-      alert(`Error al guardar (${ax.response?.status ?? "?"}). ${
-        typeof ax.response?.data === "string" ? ax.response?.data : JSON.stringify(ax.response?.data)
-      }`);
-    } finally { setLoading(false); }
+      alert(
+        `Error al guardar (${ax.response?.status ?? "?"}). ${
+          typeof ax.response?.data === "string"
+            ? ax.response?.data
+            : JSON.stringify(ax.response?.data)
+        }`
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!selectedProcess) {
-    return <div className="h-full flex items-center justify-center text-gray-400 italic">Selecciona un proceso para ver detalles</div>;
+    return (
+      <div className="h-full flex items-center justify-center text-gray-400 italic">
+        Selecciona un proceso para ver detalles
+      </div>
+    );
   }
 
   return (
@@ -264,24 +395,35 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
         {/* Meta */}
         <div className="space-y-3 pb-4 border-b border-gray-200 mb-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Detalles del Proceso</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Detalles del Proceso
+            </h2>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500">Orden</span>
-              <Input value={selectedProcess.orden ?? ""} disabled className="h-8 w-16 text-center bg-gray-100 text-gray-700 border-gray-200" />
+              <Input
+                value={selectedProcess.orden ?? ""}
+                disabled
+                className="h-8 w-16 text-center bg-gray-100 text-gray-700 border-gray-200"
+              />
             </div>
           </div>
-          <p className="text-sm text-gray-500">Edita la información del proceso seleccionado</p>
+          <p className="text-sm text-gray-500">
+            Edita la información del proceso seleccionado
+          </p>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Nombre del Proceso</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Nombre del Proceso
+            </label>
             <Input
               value={form.label}
-              onChange={(e) => setForm((p)=>({ ...p, label: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, label: e.target.value }))
+              }
               className="bg-white border-gray-300 focus:border-blue-400 focus:ring-blue-300"
               placeholder="Nombre del proceso"
             />
           </div>
         </div>
-
 
         {/* Receta */}
         <div className="space-y-4">
@@ -293,7 +435,7 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
             onAdd={addEntrada}
             onChange={patchEntrada}
             onRemove={removeEntrada}
-            onMateriaCreated={(m) => setMaterias(prev=>[...prev, m])}
+            onMateriaCreated={(m) => setMaterias((prev) => [...prev, m])}
           />
           <RecipeSection
             title="Salidas"
@@ -302,9 +444,8 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
             onAdd={addSalida}
             onChange={patchSalida}
             onRemove={removeSalida}
-            onMateriaCreated={(m) => setMaterias(prev=>[...prev, m])}
+            onMateriaCreated={(m) => setMaterias((prev) => [...prev, m])}
           />
-          
         </div>
 
         <Separator className="my-6" />
@@ -318,7 +459,8 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
           />
         ) : (
           <div className="text-sm text-gray-500">
-            Dependencias: selecciona un artículo y abre un proceso para habilitar la búsqueda entre otros diagramas del mismo artículo.
+            Dependencias: selecciona un artículo y abre un proceso para
+            habilitar la búsqueda entre otros diagramas del mismo artículo.
           </div>
         )}
 
@@ -329,11 +471,11 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
           areas={areas}
           areaId={areaId}
           setAreaId={setAreaId}
-          onAreaCreated={(a)=> setAreas(prev => [...prev, a])}
+          onAreaCreated={(a) => setAreas((prev) => [...prev, a])}
           maquinas={tmList}
           tmId={tmId}
           setTmId={setTmId}
-          onMaquinaCreated={(tm)=> setTmList(prev => [...prev, tm])}
+          onMaquinaCreated={(tm) => setTmList((prev) => [...prev, tm])}
           disabledMachine={!areaId}
         />
 
@@ -343,7 +485,9 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Tipo de Proceso</h2>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Tipo</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Tipo
+            </label>
             <Select
               value={tipo}
               onValueChange={(v) => setTipo(v as "NORMAL" | "ALMACENAMIENTO")}
@@ -361,58 +505,18 @@ export function ProcessDetailPanel({ selectedProcess, catalogId, onSaved }: Proc
 
         <Separator className="my-6" />
 
-        {/* Distribución y parámetros */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Distribución</h2>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Tipo de distribución</label>
-            <Select value={form.distribucion} onValueChange={(value) => setForm((p)=>({ ...p, distribucion: value }))}>
-              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-400 focus:ring-blue-300">
-                <SelectValue placeholder="Selecciona distribución" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="norm">Normal</SelectItem>
-                <SelectItem value="expon">Exponencial</SelectItem>
-                <SelectItem value="lognorm">Lognormal</SelectItem>
-                <SelectItem value="gamma">Gamma</SelectItem>
-                <SelectItem value="weibull_min">Weibull Min</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        
+        
 
-          {paramsCount > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">Parámetros ({paramsCount})</label>
-              <div className="flex gap-2">
-                {Array.from({ length: paramsCount }).map((_, i) => (
-                  <Input
-                    key={i}
-                    value={form.parametros[i] || ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setForm((prev) => {
-                        const updated = [...prev.parametros];
-                        updated[i] = v;
-                        return { ...prev, parametros: updated };
-                      });
-                    }}
-                    placeholder={`Parámetro ${i + 1}`}
-                    className="bg-white border-gray-300 focus:border-blue-400 focus:ring-blue-300 w-1/3 text-sm"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 h-[250px] border border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 text-sm">
-          Aquí irá el gráfico del proceso
-        </div>
+        <ProcessDistributionCard process={selectedProcess} />
       </div>
 
-      <div className="border-t pt-3 mt-2 bg-white flex justify-end">
-        <Button onClick={handleSave} disabled={!canSave || loading}
-          className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 shadow-sm">
+      <div className="border-t pt-3 mt-2  flex justify-end">
+        <Button
+          onClick={handleSave}
+          disabled={!canSave || loading}
+          className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 shadow-sm"
+        >
           {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
           Guardar cambios
         </Button>

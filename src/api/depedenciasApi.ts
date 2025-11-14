@@ -6,7 +6,7 @@ export type ProcesoLookupItem = {
   id_proceso: number;
   nombre_proceso: string;
   orden?: number | null;
-  id_diagrama: number;
+  id_diagrama: number | null; 
   tipo?: "NORMAL" | "ALMACENAMIENTO";
   diagrama_nombre?: string | null;
   catalogo_id?: number | null;
