@@ -1,0 +1,461 @@
+// src/pages/Diagram/DiagramCanvas/ProcessDetailPanel/ProcessDistributionCard.tsx
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  type AutoResponse,
+  type ManualResponse,
+  type RankedItem,
+  getAutoDistribution,
+  getDistributionParamNames,
+  postManualDistribution,
+} from "@/api/analysisApi";
+import type { ProcessData } from "./ProcessDetailPanel";
+import { Loader2, BarChart3 } from "lucide-react";
+import { updateProceso } from "@/api/procesosApi";
+
+interface Props {
+  process: ProcessData | null;
+}
+
+const SUPPORTED_DISTRIBS = [
+  { value: "norm", label: "Normal" },
+  { value: "weibull_min", label: "Weibull" },
+  { value: "expon", label: "Exponencial" },
+  { value: "lognorm", label: "Lognormal" },
+  { value: "gamma", label: "Gamma" },
+];
+
+export function ProcessDistributionCard({ process }: Props) {
+  const [autoData, setAutoData] = useState<AutoResponse | null>(null);
+  const [manualData, setManualData] = useState<ManualResponse | null>(null);
+
+  const [selectedDistrib, setSelectedDistrib] = useState<string>("");
+  const [paramNames, setParamNames] = useState<string[]>([]);
+  const [paramValues, setParamValues] = useState<string[]>([]);
+
+  const [loadingAuto, setLoadingAuto] = useState(false);
+  const [loadingManual, setLoadingManual] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const procesoId = process?.procesoId ?? null;
+  const distribucionBD = process?.distribucion ?? null;
+  const parametrosBD = process?.parametros ?? null;
+
+  // Imagen que se va a mostrar (auto o la última manual)
+  const currentImage = useMemo(
+    () => manualData?.image_base64 ?? autoData?.image_base64 ?? null,
+    [manualData, autoData]
+  );
+
+  // 1) Cuando cambia el proceso, pedimos la distribución "auto"
+  useEffect(() => {
+    if (!procesoId) {
+      setAutoData(null);
+      setManualData(null);
+      setSelectedDistrib("");
+      setParamNames([]);
+      setParamValues([]);
+      setError(null);
+      return;
+    }
+
+    const load = async () => {
+      setLoadingAuto(true);
+      setError(null);
+      try {
+        const res = await getAutoDistribution(procesoId, 20);
+        setAutoData(res);
+        setManualData(null); // reset
+
+        if (res.modo === "auto") {
+          if (res.seleccion) {
+            setSelectedDistrib(res.seleccion);
+            const best = res.ranking.find(
+              (r) => r.distrib === res.seleccion
+            ) as RankedItem | undefined;
+
+            const baseParams = best?.parametros ?? res.parametros ?? [];
+            const names = await getDistributionParamNames(res.seleccion);
+            setParamNames(names);
+            setParamValues(
+              names.map((_, i) =>
+                baseParams[i] !== undefined ? String(baseParams[i]) : ""
+              )
+            );
+          }
+        } else {
+          // modo manual (N < umbral): si el proceso ya tiene algo en BD, respetarlo
+          const def = distribucionBD || "norm";
+          setSelectedDistrib(def);
+          const names = await getDistributionParamNames(def);
+          setParamNames(names);
+
+          // Solo inicializamos los valores si NO hay nada guardado en BD
+          const hasDbParams = Boolean(distribucionBD && parametrosBD);
+          if (!hasDbParams) {
+            setParamValues(names.map(() => ""));
+          }
+        }
+      } catch (e: any) {
+        console.error(e);
+        if (e?.response?.status === 404) {
+          setError("Este proceso no tiene mediciones registradas.");
+        } else {
+          setError("Error al calcular la distribución.");
+        }
+        setAutoData(null);
+        setManualData(null);
+      } finally {
+        setLoadingAuto(false);
+      }
+    };
+
+    load();
+  }, [procesoId]);
+
+  // 1.5) Si el proceso ya tiene distribucion + parametros en BD (modo manual):
+  //      - rellenar inputs
+  //      - recalcular la gráfica con esos parámetros
+  useEffect(() => {
+    if (!procesoId) return;
+    // Si estamos en modo automático (N>=umbral), no sobreescribimos
+    // la selección ni la gráfica recomendada por el servidor.
+    if (autoData?.modo === "auto") return;
+    if (!distribucionBD) return;
+
+    let cancelled = false;
+
+    const initFromDB = async () => {
+      try {
+        const parsed: unknown =
+          typeof parametrosBD === "string"
+            ? JSON.parse(parametrosBD)
+            : parametrosBD;
+        const arr = Array.isArray(parsed) ? parsed : [];
+
+        if (!arr.length) return;
+
+        setSelectedDistrib(distribucionBD);
+
+        const names = await getDistributionParamNames(distribucionBD);
+        if (cancelled) return;
+
+        setParamNames(names);
+        setParamValues(
+          names.map((_, i) =>
+            arr[i] !== undefined && arr[i] !== null ? String(arr[i]) : ""
+          )
+        );
+
+        setLoadingManual(true);
+        setError(null);
+        const res = await postManualDistribution(procesoId, {
+          nombre: distribucionBD,
+          parametros: arr,
+          umbral: 20,
+        });
+        if (!cancelled) {
+          setManualData(res);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error("Error inicializando distribución manual desde BD:", e);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingManual(false);
+        }
+      }
+    };
+
+    initFromDB();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [procesoId, distribucionBD, parametrosBD, autoData?.modo]);
+
+  // 2) Cuando el usuario cambia distribución desde el ranking o el select
+  const handleDistribChange = async (value: string) => {
+    setSelectedDistrib(value);
+    setError(null);
+
+    try {
+      // 1) Obtener nombres de parámetros para esa distribución
+      const names = await getDistributionParamNames(value);
+      setParamNames(names);
+
+      // 2) Intentar obtener parámetros base desde el ranking (modo auto)
+      let baseParams: number[] = [];
+      if (autoData?.modo === "auto") {
+        const fromRanking =
+          autoData.ranking.find((r) => r.distrib === value)?.parametros ?? [];
+        baseParams = Array.isArray(fromRanking) ? fromRanking : [];
+      }
+
+      // 3) Si no hay parámetros en el ranking, intentamos usar lo que haya en los inputs actuales
+      if (!baseParams.length && paramValues.length) {
+        const parsed = paramValues.map((v) => Number(v));
+        if (!parsed.some((n) => Number.isNaN(n))) {
+          baseParams = parsed;
+        }
+      }
+
+      // 4) Sincronizar inputs con los parámetros base (o vacíos)
+      const valuesAsString = names.map((_, i) =>
+        baseParams[i] !== undefined && baseParams[i] !== null
+          ? String(baseParams[i])
+          : ""
+      );
+      setParamValues(valuesAsString);
+
+      // 5) Recalcular SIEMPRE la gráfica cuando se cambia la distribución,
+      //    siempre que tengamos id de proceso y al menos un parámetro.
+      if (!procesoId || !baseParams.length) return;
+
+      setLoadingManual(true);
+      try {
+        const res = await postManualDistribution(procesoId, {
+          nombre: value,
+          parametros: baseParams,
+          umbral: 20,
+        });
+        setManualData(res);
+
+        // Guardar también en la tabla procesos
+        try {
+          await updateProceso(procesoId, {
+            distribucion: value,
+            parametros: JSON.stringify(baseParams),
+          });
+        } catch (e) {
+          console.error("Error guardando parametros en procesos:", e);
+        }
+      } finally {
+        setLoadingManual(false);
+      }
+    } catch (e) {
+      console.error(e);
+      setParamNames([]);
+      setParamValues([]);
+      setError("Error al cargar parámetros de la distribución.");
+    }
+  };
+
+  // 3) Click en "Calcular / Actualizar gráfica"
+  const handleRecalculate = async () => {
+    if (!procesoId || !selectedDistrib) return;
+
+    const nums = paramValues.map((v) => Number(v));
+    if (nums.some((n) => Number.isNaN(n))) {
+      setError("Todos los parámetros deben ser numéricos.");
+      return;
+    }
+
+    setLoadingManual(true);
+    setError(null);
+    try {
+      const res = await postManualDistribution(procesoId, {
+        nombre: selectedDistrib,
+        parametros: nums,
+        umbral: 20,
+      });
+      setManualData(res);
+
+      // Guardar en la tabla procesos: distribucion + parametros (como JSON)
+      try {
+        await updateProceso(procesoId, {
+          distribucion: selectedDistrib,
+          parametros: JSON.stringify(nums),
+        });
+      } catch (e) {
+        console.error("Error guardando parametros en procesos:", e);
+      }
+    } catch (e: any) {
+      console.error(e);
+      if (e?.response?.data?.detail) {
+        setError(String(e.response.data.detail));
+      } else {
+        setError("Error al recalcular la distribución.");
+      }
+    } finally {
+      setLoadingManual(false);
+    }
+  };
+
+  // 4) UI
+
+  if (!process || !procesoId) {
+    return (
+      <div className="mt-6 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-600">
+        Selecciona un proceso en el diagrama para ver su distribución
+        estadística.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 space-y-3">
+      {/* Header similar to other sections */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Distribución estadística
+        </h2>
+      </div>
+
+      {/* Loading / error messages */}
+      {loadingAuto && (
+        <div className="text-sm text-gray-500 flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Calculando distribución…
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Main card */}
+      <div className="border rounded-lg bg-white p-3 space-y-4">
+        <p className="text-xs text-slate-500">
+          Proceso: <span className="font-medium">{process.label}</span>
+        </p>
+
+        {autoData && (
+          <div className="space-y-1 text-xs text-slate-700">
+            <p className="font-medium">Mensaje:</p>
+            <p className="whitespace-pre-line text-slate-600">
+              {autoData.mensaje}
+            </p>
+
+            {autoData.modo === "auto" && autoData.seleccion && (
+              <p className="text-xs">
+                Se recomienda la distribución:{" "}
+                <span className="font-semibold">
+                  {autoData.seleccion === "norm"
+                    ? "Normal"
+                    : autoData.seleccion === "weibull_min"
+                    ? "Weibull"
+                    : autoData.seleccion}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Selector de distribución */}
+        {autoData && (
+          <div className="space-y-2">
+            <Label className="text-xs">Distribución a visualizar</Label>
+            {autoData.modo === "auto" && autoData.ranking.length > 0 ? (
+              <Select
+                value={selectedDistrib}
+                onValueChange={handleDistribChange}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Selecciona distribución" />
+                </SelectTrigger>
+                <SelectContent>
+                  {autoData.ranking.map((r) => (
+                    <SelectItem key={r.distrib} value={r.distrib}>
+                      {r.titulo?.split(" — ")[0] || r.distrib}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select
+                value={selectedDistrib}
+                onValueChange={handleDistribChange}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Selecciona distribución" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_DISTRIBS.map((d) => (
+                    <SelectItem key={d.value} value={d.value}>
+                      {d.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
+
+                {/* Parámetros */}
+        {paramNames.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-slate-700">
+              Parámetros de la distribución
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {paramNames.map((name, idx) => (
+                <div key={name} className="space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wide text-slate-500">
+                    {name}
+                  </Label>
+                  <Input
+                    className="h-8 text-xs"
+                    value={paramValues[idx] ?? ""}
+                    onChange={(e) => {
+                      const copy = [...paramValues];
+                      copy[idx] = e.target.value;
+                      setParamValues(copy);
+                    }}
+                    placeholder="0.0"
+                    disabled={autoData?.modo === "auto"}   // 👈 aquí
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Botón recalcular */}
+        {autoData && autoData.modo !== "auto" && (
+          <div>
+            <Button
+              size="sm"
+              className="h-8 px-3 text-xs"
+              onClick={handleRecalculate}
+              disabled={loadingManual || !selectedDistrib}
+            >
+              {loadingManual ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Calculando…
+                </>
+              ) : (
+                "Calcular / Actualizar gráfica"
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Gráfica */}
+        {currentImage && (
+          <div className="rounded-md bg-slate-50 p-2">
+            <img
+              src={`data:image/png;base64,${currentImage}`}
+              alt="Distribución del proceso"
+              className="mx-auto max-h-100 rounded"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
