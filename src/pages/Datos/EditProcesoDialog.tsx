@@ -1,21 +1,36 @@
 // src/pages/Datos/EditProcesoDialog.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader,
-  DialogTitle, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Pencil } from "lucide-react";
+import { Loader2, Pencil, Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import type { ProcesoLookupRow as ProcesoLookup } from "@/api/procesosApi";
 import { updateProceso } from "@/api/procesosApi";
 import { getCatalogos, type Catalogo } from "@/api/catalogoApi";
 import { getDiagramasByCatalogo, type Diagrama } from "@/api/diagramaApi";
-import { listDatosProceso, type DatoProceso } from "@/api/datosProcesoApi";
+import {
+  listDatosProceso,
+  type DatoProceso,
+  createDatoProceso, // NEW
+} from "@/api/datosProcesoApi";
 
 // --- helpers ---
 function normalizeCatalogList(cats: any): Catalogo[] {
@@ -29,15 +44,14 @@ function normalizeCatalogList(cats: any): Catalogo[] {
 // aunque el backend lo devuelva como catalogo_id
 function normalizeDatosCatalogId(ds: any[]): { id_catalogo: number | null }[] {
   return (Array.isArray(ds) ? ds : []).map((d) => ({
-    id_catalogo:
-      (d as any).id_catalogo ??
-      (d as any).catalogo_id ??
-      null,
+    id_catalogo: (d as any).id_catalogo ?? (d as any).catalogo_id ?? null,
   }));
 }
 
 // devuelve el id_catalogo más frecuente (modo) de las mediciones
-function mostFrequentCatalogId(datos: { id_catalogo: number | null }[]): number | null {
+function mostFrequentCatalogId(
+  datos: { id_catalogo: number | null }[]
+): number | null {
   const counts = new Map<number, number>();
   for (const d of datos) {
     if (typeof d.id_catalogo === "number") {
@@ -47,10 +61,66 @@ function mostFrequentCatalogId(datos: { id_catalogo: number | null }[]): number 
   let best: number | null = null;
   let bestCount = -1;
   for (const [id, c] of counts) {
-    if (c > bestCount) { best = id; bestCount = c; }
+    if (c > bestCount) {
+      best = id;
+      bestCount = c;
+    }
   }
   return best;
 }
+
+
+// Convierte segundos (pueden ser decimales) a string tipo "0:00:21.000000"
+function secondsToIntervalString(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds)) return "";
+
+  const total = Math.max(0, totalSeconds);
+  const whole = Math.floor(total);
+  const frac = total - whole;
+
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const seconds = whole % 60;
+  const micros = Math.round(frac * 1_000_000);
+
+  const mm = minutes.toString().padStart(2, "0");
+  const ss = seconds.toString().padStart(2, "0");
+  const microStr = micros.toString().padStart(6, "0");
+
+  // Ejemplo: 0:00:21.000000
+  return `${hours}:${mm}:${ss}.${microStr}`;
+}
+
+// Convierte un texto "min:seg" (o minutos decimales) a segundos totales
+function parseMinSec(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  // Formato "mm:ss" o "m:ss"
+  if (trimmed.includes(":")) {
+    const [mStr, sStr] = trimmed.split(":");
+    const m = parseInt(mStr, 10);
+    const s = parseInt(sStr, 10);
+    if (Number.isNaN(m) || Number.isNaN(s) || m < 0 || s < 0) return null;
+    return m * 60 + s;
+  }
+
+  // Si no hay ":", interpretamos como minutos decimales
+  const min = parseFloat(trimmed);
+  if (Number.isNaN(min)) return null;
+  return min * 60;
+}
+
+// Formatea segundos totales a "min:seg"
+function formatMinSec(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds)) return "";
+  const total = Math.max(0, Math.round(totalSeconds));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  const ss = seconds.toString().padStart(2, "0");
+  return `${minutes}:${ss}`;
+}
+
 
 type Props = {
   open: boolean;
@@ -59,7 +129,12 @@ type Props = {
   onSaved?: () => void;
 };
 
-export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved }: Props) {
+export default function EditProcesoDialog({
+  open,
+  onOpenChange,
+  proceso,
+  onSaved,
+}: Props) {
   const [nombre, setNombre] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -70,17 +145,63 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
   const [diagramas, setDiagramas] = useState<Diagrama[]>([]);
   const [diagramaId, setDiagramaId] = useState<number | null>(null);
 
-  // datos de mediciones (por si luego quieres mostrarlos/usar más info)
+  // datos de mediciones
   const [datos, setDatos] = useState<DatoProceso[]>([]);
+
+  // --- NEW: estado para nueva medición ---
+  const [creatingDato, setCreatingDato] = useState(false);
+  const [newDato, setNewDato] = useState<{
+    fecha: string;
+    cantidad: string;
+    tiempo_min: string;
+    tiempo_seg: string;
+    operario: string;
+    notas: string;
+  }>({
+    fecha: "",
+    cantidad: "",
+    tiempo_min: "",
+    tiempo_seg: "",
+    operario: "",
+    notas: "",
+  });
+
+  // helpers de conversión min ↔ seg
+  const handleMinChange = (value: string) => {
+    setNewDato((prev) => {
+      const totalSeconds = parseMinSec(value);
+      const seg = totalSeconds != null ? totalSeconds.toString() : "";
+      return { ...prev, tiempo_min: value, tiempo_seg: seg };
+    });
+  };
+
+  const handleSegChange = (value: string) => {
+    setNewDato((prev) => {
+      const n = parseFloat(value);
+      const minStr =
+        !Number.isNaN(n) && value !== "" ? formatMinSec(n) : "";
+      return { ...prev, tiempo_seg: value, tiempo_min: minStr };
+    });
+  };
 
   // --- CARGA INICIAL (cuando se abre y cambia el proceso) ---
   useEffect(() => {
     if (!open || !proceso) return;
 
-    // setea nombre / articulo / diagrama desde el lookup
     setNombre(proceso.nombre_proceso ?? "");
     setCatalogoId(proceso.catalogo_id ?? null);
     setDiagramaId(proceso.id_diagrama ?? null);
+
+    // reset mini-form cada vez que abres/ cambias proceso
+    setNewDato((prev) => ({
+      ...prev,
+      fecha: new Date().toISOString().slice(0, 10), // hoy
+      cantidad: "",
+      tiempo_min: "",
+      tiempo_seg: "",
+      operario: "",
+      notas: "",
+    }));
 
     let cancel = false;
 
@@ -97,16 +218,15 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
         setDatos(datosProc);
 
         if (proceso.catalogo_id) {
-          // Si el lookup ya trae artículo, precarga diagramas de ese artículo
           const dias = await getDiagramasByCatalogo(proceso.catalogo_id);
           if (cancel) return;
           setDiagramas(dias);
 
-          // si el diagrama actual ya no pertenece al artículo, resetea
-          const stillValid = dias.some(d => d.id_diagrama === (proceso.id_diagrama ?? -1));
+          const stillValid = dias.some(
+            (d) => d.id_diagrama === (proceso.id_diagrama ?? -1)
+          );
           if (!stillValid) setDiagramaId(null);
         } else {
-          // Sin artículo en el lookup: sugerir desde datos_proceso
           const datosNorm = normalizeDatosCatalogId(datosProc as any[]);
           const suggested = mostFrequentCatalogId(datosNorm);
           if (suggested != null) {
@@ -116,7 +236,9 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
               if (cancel) return;
               setDiagramas(dias);
 
-              const stillValid = dias.some(d => d.id_diagrama === (proceso.id_diagrama ?? -1));
+              const stillValid = dias.some(
+                (d) => d.id_diagrama === (proceso.id_diagrama ?? -1)
+              );
               if (!stillValid) setDiagramaId(null);
             } catch {
               if (!cancel) {
@@ -137,7 +259,9 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
       }
     })();
 
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+    };
   }, [open, proceso]);
 
   // --- cuando cambia el ARTÍCULO, recarga sus diagramas ---
@@ -154,7 +278,6 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
         if (cancel) return;
         setDiagramas(dias);
 
-        // Si el diagrama seleccionado no pertenece al nuevo artículo, resetea
         const match = dias.some((d) => d.id_diagrama === diagramaId);
         if (!match) setDiagramaId(null);
       } catch {
@@ -163,14 +286,17 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
         setDiagramaId(null);
       }
     })();
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+    };
   }, [catalogoId, diagramaId]);
 
   const canSave = useMemo(() => {
     if (!proceso) return false;
-    const nombreChanged   = (nombre ?? "").trim() !== (proceso.nombre_proceso ?? "");
-    const diagramaChanged = (diagramaId ?? null) !== (proceso.id_diagrama ?? null);
-    // Nota: el "Artículo" se persiste vía diagrama; si cambias artículo pero no eliges diagrama, no hay nada que guardar.
+    const nombreChanged =
+      (nombre ?? "").trim() !== (proceso.nombre_proceso ?? "");
+    const diagramaChanged =
+      (diagramaId ?? null) !== (proceso.id_diagrama ?? null);
     return nombre.trim().length > 0 && (nombreChanged || diagramaChanged);
   }, [nombre, diagramaId, proceso]);
 
@@ -180,7 +306,7 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
     try {
       await updateProceso(proceso.id_proceso, {
         nombre_proceso: nombre.trim(),
-        id_diagrama: diagramaId ?? null, // al guardar, el artículo queda definido por el diagrama elegido
+        id_diagrama: diagramaId ?? null,
       });
       onSaved?.();
       onOpenChange(false);
@@ -188,6 +314,79 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
       alert("No se pudo guardar los cambios.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  // --- NEW: crear medición ---
+  async function handleCreateDato() {
+    if (!proceso) return;
+    if (!catalogoId) {
+      alert("Selecciona un artículo antes de agregar mediciones.");
+      return;
+    }
+    if (!newDato.fecha) {
+      alert("Indica la fecha de la medición.");
+      return;
+    }
+
+    // Calcular segundos totales a partir de lo que haya ingresado el usuario
+    const minStr = newDato.tiempo_min.trim();
+    const segStr = newDato.tiempo_seg.trim();
+    const minNumSeconds = parseMinSec(minStr);
+    const segNum = parseFloat(segStr);
+
+    let totalSeconds: number | null = null;
+
+    if (segStr !== "" && !Number.isNaN(segNum)) {
+      totalSeconds = segNum;
+    } else if (minStr !== "" && minNumSeconds != null) {
+      totalSeconds = minNumSeconds;
+    }
+
+    if (totalSeconds === null) {
+      alert("Indica el tiempo total en minutos o en segundos.");
+      return;
+    }
+
+    const tiempoTotalMinText = secondsToIntervalString(totalSeconds);
+    const tiempoTotalSegText = String(Math.round(totalSeconds));
+
+    setCreatingDato(true);
+    try {
+      const created = await createDatoProceso({
+        id_proceso: proceso.id_proceso,
+        id_catalogo: catalogoId,
+        cantidad:
+          newDato.cantidad.trim() !== "" ? Number(newDato.cantidad) : null,
+        fecha: newDato.fecha,
+        tiempo_total_min: tiempoTotalMinText,
+        tiempo_total_seg: tiempoTotalSegText,
+        operario:
+          newDato.operario.trim() !== "" ? newDato.operario.trim() : null,
+        notas: newDato.notas.trim() !== "" ? newDato.notas.trim() : null,
+      });
+
+      // Lo ponemos al inicio de la lista
+      setDatos((prev) => [created, ...prev]);
+
+      // limpiamos cantidad/tiempos/operario/notas, mantenemos la fecha
+      setNewDato((prev) => ({
+        ...prev,
+        cantidad: "",
+        tiempo_min: "",
+        tiempo_seg: "",
+        operario: "",
+        notas: "",
+      }));
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.detail ??
+        e?.response?.data ??
+        e?.message ??
+        "No se pudo crear la medición.";
+      alert(String(msg));
+    } finally {
+      setCreatingDato(false);
     }
   }
 
@@ -200,7 +399,8 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
             Editar proceso
           </DialogTitle>
           <DialogDescription>
-            Cambia el nombre, el artículo y el diagrama al que pertenece este proceso. Abajo verás sus mediciones.
+            Cambia el nombre, el artículo y el diagrama al que pertenece este
+            proceso. Abajo verás sus mediciones.
           </DialogDescription>
         </DialogHeader>
 
@@ -232,7 +432,10 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
               </SelectTrigger>
               <SelectContent>
                 {catalogos.map((c) => (
-                  <SelectItem key={c.id_catalogo} value={String(c.id_catalogo)}>
+                  <SelectItem
+                    key={c.id_catalogo}
+                    value={String(c.id_catalogo)}
+                  >
                     {c.nombre}
                   </SelectItem>
                 ))}
@@ -240,7 +443,7 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
             </Select>
           </div>
 
-          {/* Diagrama (dependiente de artículo) */}
+          {/* Diagrama */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Diagrama
@@ -251,11 +454,20 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
               onValueChange={(v) => setDiagramaId(v ? Number(v) : null)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={catalogoId ? "Selecciona diagrama" : "Selecciona primero un artículo"} />
+                <SelectValue
+                  placeholder={
+                    catalogoId
+                      ? "Selecciona diagrama"
+                      : "Selecciona primero un artículo"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {diagramas.map((d) => (
-                  <SelectItem key={d.id_diagrama} value={String(d.id_diagrama)}>
+                  <SelectItem
+                    key={d.id_diagrama}
+                    value={String(d.id_diagrama)}
+                  >
                     {d.nombre}
                   </SelectItem>
                 ))}
@@ -268,7 +480,136 @@ export default function EditProcesoDialog({ open, onOpenChange, proceso, onSaved
 
         {/* Datos de medición */}
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold">Datos capturados (datos_proceso)</h3>
+          <h3 className="text-sm font-semibold">
+            Datos capturados (datos_proceso)
+          </h3>
+
+          {/* NEW: formulario pequeña para nueva medición */}
+          {proceso && (
+            <div className="border rounded-md p-3 bg-slate-50 space-y-2">
+              <p className="text-xs font-medium text-slate-700">
+                Agregar nueva medición
+              </p>
+              <div className="grid grid-cols-12 gap-2 items-end">
+                <div className="col-span-3">
+                  <label className="block text-xs font-medium mb-1">
+                    Fecha
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-white",
+                          !newDato.fecha && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newDato.fecha
+                          ? new Date(newDato.fecha).toLocaleDateString("es-EC")
+                          : "Selecciona una fecha"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={
+                          newDato.fecha ? new Date(newDato.fecha + "T00:00:00") : undefined
+                        }
+                        onSelect={(date) => {
+                          if (!date) {
+                            setNewDato((p) => ({ ...p, fecha: "" }));
+                            return;
+                          }
+                          const iso = date.toISOString().slice(0, 10); // "YYYY-MM-DD"
+                          setNewDato((p) => ({ ...p, fecha: iso }));
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium mb-1">
+                    Cantidad
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    className="bg-white"
+                    value={newDato.cantidad}
+                    onChange={(e) =>
+                      setNewDato((p) => ({ ...p, cantidad: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium mb-1">
+                    Tiempo total (min:seg)
+                  </label>
+                  <Input
+                    type="text"
+                    className="bg-white"
+                    placeholder="min:seg (ej. 0:21)"
+                    value={newDato.tiempo_min}
+                    onChange={(e) => handleMinChange(e.target.value)}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium mb-1">
+                    Tiempo total (seg)
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    className="bg-white"
+                    value={newDato.tiempo_seg}
+                    onChange={(e) => handleSegChange(e.target.value)}
+                  />
+                </div>
+                <div className="col-span-3">
+                  <label className="block text-xs font-medium mb-1">
+                    Operario
+                  </label>
+                  <Input
+                    className="bg-white"
+                    value={newDato.operario}
+                    onChange={(e) =>
+                      setNewDato((p) => ({ ...p, operario: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="col-span-12 mt-2">
+                  <label className="block text-xs font-medium mb-1">
+                    Notas
+                  </label>
+                  <Input
+                    className="bg-white"
+                    value={newDato.notas}
+                    onChange={(e) =>
+                      setNewDato((p) => ({ ...p, notas: e.target.value }))
+                    }
+                    placeholder="Observaciones, incidencias, etc."
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={handleCreateDato}
+                  disabled={creatingDato}
+                >
+                  {creatingDato && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Añadir medición
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Tabla de datos existentes */}
           {datos.length === 0 ? (
             <div className="text-xs text-muted-foreground">
               No hay mediciones registradas para este proceso.
