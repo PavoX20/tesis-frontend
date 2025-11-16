@@ -1,7 +1,17 @@
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+  console.error(
+    "¡Error! La variable de entorno VITE_API_URL no está definida."
+  );
+  console.error("Asegúrate de tener un .env en local o de configurarla en Vercel.");
+}
+
 const axiosClient = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  // 2. Usamos la variable dinámica
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
