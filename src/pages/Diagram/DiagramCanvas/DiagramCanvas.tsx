@@ -312,7 +312,7 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
       </div>
 
       {/* Zona derecha */}
-      <div className="w-1/2 p-6 overflow-y-auto bg-blue-50">
+            <div className="w-1/2 p-6 overflow-y-auto bg-blue-50">
         <ProcessDetailPanel
           selectedProcess={selectedProcess}
           catalogId={productId}
@@ -324,6 +324,10 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
               );
               if (updated) setSelectedProcess(updated.data);
             }
+          }}
+          onUnlink={async () => {
+            await fetchDiagram();   // recarga canvas
+            setSelectedProcess(null); // quita panel porque ya no está en el diagrama
           }}
         />
       </div>
