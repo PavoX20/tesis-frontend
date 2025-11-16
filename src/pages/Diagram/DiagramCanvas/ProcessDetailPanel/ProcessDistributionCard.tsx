@@ -185,42 +185,39 @@ export function ProcessDistributionCard({ process }: Props) {
   }, [procesoId, distribucionBD, parametrosBD, autoData?.modo]);
 
   // 2) Cuando el usuario cambia distribución desde el ranking o el select
-  const handleDistribChange = async (value: string) => {
-    setSelectedDistrib(value);
-    setError(null);
+  // 2) Cuando el usuario cambia distribución desde el ranking o el select
+const handleDistribChange = async (value: string) => {
+  setSelectedDistrib(value);
+  setError(null);
 
-    try {
-      // 1) Obtener nombres de parámetros para esa distribución
-      const names = await getDistributionParamNames(value);
-      setParamNames(names);
+  try {
+    // 1) Obtener nombres de parámetros para esa distribución
+    const names = await getDistributionParamNames(value);
+    setParamNames(names);
 
-      // 2) Intentar obtener parámetros base desde el ranking (modo auto)
+    const isAutoMode = autoData?.modo === "auto";
+
+    // ----- MODO AUTO (N >= umbral) -----
+    if (isAutoMode) {
+      // Intentar obtener parámetros base desde el ranking
       let baseParams: number[] = [];
-      if (autoData?.modo === "auto") {
-        const fromRanking =
-          autoData.ranking.find((r) => r.distrib === value)?.parametros ?? [];
-        baseParams = Array.isArray(fromRanking) ? fromRanking : [];
+      const fromRanking =
+        autoData?.ranking.find((r) => r.distrib === value)?.parametros ?? [];
+      if (Array.isArray(fromRanking)) {
+        baseParams = [...fromRanking];
       }
 
-      // 3) Si no hay parámetros en el ranking, intentamos usar lo que haya en los inputs actuales
-      if (!baseParams.length && paramValues.length) {
-        const parsed = paramValues.map((v) => Number(v));
-        if (!parsed.some((n) => Number.isNaN(n))) {
-          baseParams = parsed;
-        }
+      // Si no tenemos parámetros completos, solo actualizamos los nombres
+      if (baseParams.length !== names.length) {
+        setParamValues(names.map(() => ""));
+        return;
       }
 
-      // 4) Sincronizar inputs con los parámetros base (o vacíos)
-      const valuesAsString = names.map((_, i) =>
-        baseParams[i] !== undefined && baseParams[i] !== null
-          ? String(baseParams[i])
-          : ""
-      );
-      setParamValues(valuesAsString);
+      // Sincronizar inputs
+      setParamValues(baseParams.map((p) => String(p)));
 
-      // 5) Recalcular SIEMPRE la gráfica cuando se cambia la distribución,
-      //    siempre que tengamos id de proceso y al menos un parámetro.
-      if (!procesoId || !baseParams.length) return;
+      // Recalcular automáticamente la gráfica y guardar en BD
+      if (!procesoId) return;
 
       setLoadingManual(true);
       try {
@@ -231,7 +228,6 @@ export function ProcessDistributionCard({ process }: Props) {
         });
         setManualData(res);
 
-        // Guardar también en la tabla procesos
         try {
           await updateProceso(procesoId, {
             distribucion: value,
@@ -243,13 +239,20 @@ export function ProcessDistributionCard({ process }: Props) {
       } finally {
         setLoadingManual(false);
       }
-    } catch (e) {
-      console.error(e);
-      setParamNames([]);
-      setParamValues([]);
-      setError("Error al cargar parámetros de la distribución.");
+      return;
     }
-  };
+
+    // ----- MODO MANUAL (N < umbral) -----
+    // Aquí NO llamamos al backend todavía.
+    // Solo preparamos los campos vacíos para que el usuario los llene
+    setParamValues(names.map(() => ""));
+  } catch (e) {
+    console.error(e);
+    setParamNames([]);
+    setParamValues([]);
+    setError("Error al cargar parámetros de la distribución.");
+  }
+};
 
   // 3) Click en "Calcular / Actualizar gráfica"
   const handleRecalculate = async () => {

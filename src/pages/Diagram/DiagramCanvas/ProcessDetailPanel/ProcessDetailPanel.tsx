@@ -57,6 +57,7 @@ interface ProcessDetailPanelProps {
   selectedProcess: ProcessData | null;
   catalogId?: number; // id_catalogo del artículo activo
   onSaved?: () => void;
+  onUnlink?: () => void;
 }
 
 // -------- Mini API ----------
@@ -168,6 +169,7 @@ export function ProcessDetailPanel({
   selectedProcess,
   catalogId,
   onSaved,
+  onUnlink,
 }: ProcessDetailPanelProps) {
   const [form, setForm] = useState<{
     label: string;
@@ -337,6 +339,37 @@ export function ProcessDetailPanel({
   const canSave =
     !!selectedProcess?.procesoId &&
     (formChanged || recetaChanged || maquinaChanged || tipoChanged);
+
+  const canUnlink =
+    !!selectedProcess?.procesoId && selectedProcess.diagramaId != null;
+
+  const handleUnlink = async () => {
+    if (!selectedProcess?.procesoId || !onUnlink) return;
+    const ok = window.confirm(
+      "¿Quitar este proceso del diagrama actual?\n\nEl proceso seguirá existiendo para este artículo, pero dejará de mostrarse en este diagrama."
+    );
+    if (!ok) return;
+
+    setLoading(true);
+    try {
+      await updateProceso(selectedProcess.procesoId, {
+        id_diagrama: null,
+        orden: null,
+      });
+      onUnlink();
+    } catch (err) {
+      const ax = err as AxiosError<any>;
+      alert(
+        `Error al desvincular (${ax.response?.status ?? "?"}). ${
+          typeof ax.response?.data === "string"
+            ? ax.response?.data
+            : JSON.stringify(ax.response?.data)
+        }`
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!selectedProcess?.procesoId) return;
@@ -511,8 +544,18 @@ export function ProcessDetailPanel({
         <ProcessDistributionCard process={selectedProcess} />
       </div>
 
-      <div className="border-t pt-3 mt-2  flex justify-end">
+      <div className="border-t pt-3 mt-2 flex justify-between items-center gap-3">
         <Button
+          type="button"
+          variant="outline"
+          onClick={handleUnlink}
+          disabled={!canUnlink || loading}
+          className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+        >
+          Desvincular del diagrama
+        </Button>
+        <Button
+          type="button"
           onClick={handleSave}
           disabled={!canSave || loading}
           className="bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 shadow-sm"

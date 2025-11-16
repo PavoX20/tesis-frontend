@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { ReactFlowProvider, type Node, type Edge } from "@xyflow/react";
-import { DiagramInner, type ProcessData } from "./DiagramInner";
-import { AddProcessDialog } from "./AddProcessDialog";
+import { type Node, type Edge } from "@xyflow/react";
+import type { ProcessData } from "./DiagramInner";
+import { DiagramGraph } from "./DiagramGraph";
 import { ProcessDetailPanel } from "./ProcessDetailPanel/ProcessDetailPanel";
 import { Loader2 } from "lucide-react";
 import { getDiagramasDetalle } from "@/api/diagramaApi";
@@ -23,6 +23,9 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
     null
   );
 
+  // 👇 NUEVO: id del diagrama que queremos enfocar (el principal)
+  const [focusDiagramId, setFocusDiagramId] = useState<number | null>(null);
+
   const fetchDiagram = async (): Promise<Node<ProcessData>[]> => {
     setLoading(true);
     setError(null);
@@ -31,6 +34,12 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
       const principal: any = data.diagrama_principal || {};
       const subdiagramas: any[] = data.subdiagramas || [];
       const dependencias: any[] = data.dependencias || [];
+
+      // 👇 NUEVO: id del diagrama principal (si existe)
+      const principalId: number | null =
+        typeof principal.id_diagrama === "number"
+          ? principal.id_diagrama
+          : null;
 
       // Constantes visuales
       const NODE_W = 140;
@@ -190,6 +199,10 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
 
       setNodes(allNodes);
       setEdges(allEdges);
+
+      // 👇 NUEVO: al terminar de construir el grafo, marcamos el diagrama principal como foco
+      setFocusDiagramId(principalId);
+
       return allNodes;
     } catch (err) {
       console.error("Error al cargar el diagrama:", err);
@@ -209,59 +222,59 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
   }, [productId]);
 
   const handleAddNode = async (idDiagrama: number | null) => {
-  if (!newNodeName.trim() || !idDiagrama) return;
+    if (!newNodeName.trim() || !idDiagrama) return;
 
-  const nombre = newNodeName.trim();
-  const orden = Number(insertPos) || 1;
+    const nombre = newNodeName.trim();
+    const orden = Number(insertPos) || 1;
 
-  try {
-    // 🔹 Misma consulta que usa el combobox, respetando el límite del back
-    const lookup = await getProcesosLookup({
-      catalogo_id: productId,
-      limit: 100, // 👈 MUY IMPORTANTE: <= límite que acepta el backend
-    });
-
-    const lowerNombre = nombre.toLocaleLowerCase("es");
-
-    // 🔍 Procesos de este catálogo con ese mismo nombre
-    const candidatos = lookup.filter(
-      (p) =>
-        (p.nombre_proceso ?? "").toLocaleLowerCase("es") === lowerNombre
-    );
-
-    // Preferimos uno sin diagrama todavía; si no, el primero que coincida
-    const existing =
-      candidatos.find((p) => p.id_diagrama == null) ?? candidatos[0];
-
-    if (existing) {
-      // ♻️ Reutilizar proceso existente: solo lo colgamos del diagrama
-      await updateProceso(existing.id_proceso, {
-        id_diagrama: idDiagrama,
-        orden,
+    try {
+      // 🔹 Misma consulta que usa el combobox, respetando el límite del back
+      const lookup = await getProcesosLookup({
+        catalogo_id: productId,
+        limit: 100, // 👈 MUY IMPORTANTE: <= límite que acepta el backend
       });
-    } else {
-      // ➕ No existe ninguno para este producto → creamos uno nuevo
-      await createProceso({
-        nombre_proceso: nombre,
-        id_diagrama: idDiagrama,
-        orden,
-        parametros: "[]",
-        distribucion: "norm",
-      });
+
+      const lowerNombre = nombre.toLocaleLowerCase("es");
+
+      // 🔍 Procesos de este catálogo con ese mismo nombre
+      const candidatos = lookup.filter(
+        (p) =>
+          (p.nombre_proceso ?? "").toLocaleLowerCase("es") === lowerNombre
+      );
+
+      // Preferimos uno sin diagrama todavía; si no, el primero que coincida
+      const existing =
+        candidatos.find((p) => p.id_diagrama == null) ?? candidatos[0];
+
+      if (existing) {
+        // ♻️ Reutilizar proceso existente: solo lo colgamos del diagrama
+        await updateProceso(existing.id_proceso, {
+          id_diagrama: idDiagrama,
+          orden,
+        });
+      } else {
+        // ➕ No existe ninguno para este producto → creamos uno nuevo
+        await createProceso({
+          nombre_proceso: nombre,
+          id_diagrama: idDiagrama,
+          orden,
+          parametros: "[]",
+          distribucion: "norm",
+        });
+      }
+
+      // Refrescamos diagrama y limpiamos estado
+      await fetchDiagram();
+      setNewNodeName("");
+      setInsertPos("1");
+      setDialogOpen(false);
+    } catch (err: any) {
+      console.error(
+        "Error al agregar proceso al diagrama:",
+        err?.response?.data || err
+      );
     }
-
-    // Refrescamos diagrama y limpiamos estado
-    await fetchDiagram();
-    setNewNodeName("");
-    setInsertPos("1");
-    setDialogOpen(false);
-  } catch (err: any) {
-    console.error(
-      "Error al agregar proceso al diagrama:",
-      err?.response?.data || err
-    );
-  }
-};
+  };
 
   if (loading)
     return (
@@ -280,32 +293,26 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
   return (
     <div className="flex w-full h-[550px] bg-white border border-blue-100 rounded-xl overflow-hidden">
       {/* Zona izquierda */}
-      <div className="w-1/2 relative border-r border-blue-100 bg-white">
-        <div className="absolute top-3 right-3 z-10">
-          <AddProcessDialog
-            open={dialogOpen}
-            setOpen={setDialogOpen}
-            newNodeName={newNodeName}
-            setNewNodeName={setNewNodeName}
-            insertPos={insertPos}
-            setInsertPos={setInsertPos}
-            handleAddNode={handleAddNode}
-            productId={productId}
-            nodesLength={nodes.length}
-          />
-        </div>
-
-        <ReactFlowProvider>
-          <DiagramInner
-            nodes={nodes}
-            edges={edges}
-            onNodeClick={(_, node) => setSelectedProcess(node.data)}
-          />
-        </ReactFlowProvider>
+      <div className="w-1/2">
+        <DiagramGraph
+          nodes={nodes}
+          edges={edges}
+          productId={productId}
+          dialogOpen={dialogOpen}
+          setDialogOpen={setDialogOpen}
+          newNodeName={newNodeName}
+          setNewNodeName={setNewNodeName}
+          insertPos={insertPos}
+          setInsertPos={setInsertPos}
+          handleAddNode={handleAddNode}
+          onNodeClick={(data) => setSelectedProcess(data)}
+          // 👇 NUEVO: pasamos el diagrama a enfocar
+          focusDiagramId={focusDiagramId}
+        />
       </div>
 
       {/* Zona derecha */}
-      <div className="w-1/2 p-6 overflow-y-auto bg-blue-50">
+            <div className="w-1/2 p-6 overflow-y-auto bg-blue-50">
         <ProcessDetailPanel
           selectedProcess={selectedProcess}
           catalogId={productId}
@@ -317,6 +324,10 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
               );
               if (updated) setSelectedProcess(updated.data);
             }
+          }}
+          onUnlink={async () => {
+            await fetchDiagram();   // recarga canvas
+            setSelectedProcess(null); // quita panel porque ya no está en el diagrama
           }}
         />
       </div>
