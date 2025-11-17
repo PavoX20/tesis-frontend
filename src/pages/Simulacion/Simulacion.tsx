@@ -20,15 +20,19 @@ export default function Simulacion() {
       return [];
     }
   });
-  const [unitsByProduct, setUnitsByProduct] = useState<Record<number, number>>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const stored = localStorage.getItem("simulacion:unitsByProduct");
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
+
+  const [unitsByProduct, setUnitsByProduct] = useState<Record<number, number>>(
+    () => {
+      if (typeof window === "undefined") return {};
+      try {
+        const stored = localStorage.getItem("simulacion:unitsByProduct");
+        return stored ? JSON.parse(stored) : {};
+      } catch {
+        return {};
+      }
     }
-  });
+  );
+
   const [products, setProducts] = useState<Catalogo[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -59,6 +63,7 @@ export default function Simulacion() {
 
   const clearSelection = () => setSelectedProducts([]);
 
+  // Persistimos selección de productos
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -67,9 +72,11 @@ export default function Simulacion() {
         JSON.stringify(selectedProducts)
       );
     } catch {
-      // ignoramos errores de localStorage
+      /* ignore */
     }
   }, [selectedProducts]);
+
+  // Persistimos # a simular por producto
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -78,7 +85,7 @@ export default function Simulacion() {
         JSON.stringify(unitsByProduct)
       );
     } catch {
-      // ignoramos errores de localStorage
+      /* ignore */
     }
   }, [unitsByProduct]);
 
@@ -142,47 +149,33 @@ export default function Simulacion() {
       </aside>
 
       {/* Panel principal de simulación */}
-      <div className="flex-1 bg-blue-50 rounded-xl border border-blue-100 shadow-inner  relative">
+      <div className="flex-1 min-w-0 bg-blue-50 rounded-xl border border-blue-100 shadow-inner relative">
         {selectedProducts.length === 0 ? (
-          <div className="h-[550px] flex items-center justify-center text-gray-500 italic text-center px-8">
+          <div className="min-h-[550px] flex items-center justify-center text-gray-500 italic text-center px-8">
             Selecciona uno o varios productos del panel izquierdo para
             configurar la simulación.
           </div>
         ) : (
-          <div className="h-[550px] flex flex-col gap-4">
-            {/* Panel principal de simulación */}
-            <div className="flex-1 bg-blue-50 rounded-xl border border-blue-100 shadow-inner p-4">
-              {selectedProducts.length === 0 ? (
-                <div className="h-[550px] flex items-center justify-center text-gray-500 italic text-center px-8">
-                  Selecciona uno o varios productos del panel izquierdo para
-                  configurar la simulación.
-                </div>
-              ) : (
-                // Scroll horizontal con una card por producto seleccionado
-                <div className="h-[550px] overflow-x-auto">
-                  <div className="flex gap-4 pb-4">
-                    {selectedProducts.map((id) => {
-                      const product = products.find(
-                        (p) => p.id_catalogo === id
-                      );
-                      if (!product) return null;
-                      return (
-                        <SimulationProductCard
-                          key={product.id_catalogo}
-                          product={product}
-                          units={unitsByProduct[product.id_catalogo] ?? 1}
-                          onUnitsChange={(value) =>
-                            setUnitsByProduct((prev) => ({
-                              ...prev,
-                              [product.id_catalogo]: value,
-                            }))
-                          }
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+          <div className="min-h-[550px] w-full p-4 overflow-x-auto overflow-y-hidden">
+            {/* fila de cards con scroll horizontal */}
+            <div className="flex flex-nowrap gap-4 w-max pr-4">
+              {selectedProducts.map((id) => {
+                const product = products.find((p) => p.id_catalogo === id);
+                if (!product) return null;
+                return (
+                  <SimulationProductCard
+                    key={product.id_catalogo}
+                    product={product}
+                    units={unitsByProduct[product.id_catalogo] ?? 1}
+                    onUnitsChange={(value) =>
+                      setUnitsByProduct((prev) => ({
+                        ...prev,
+                        [product.id_catalogo]: value,
+                      }))
+                    }
+                  />
+                );
+              })}
             </div>
           </div>
         )}

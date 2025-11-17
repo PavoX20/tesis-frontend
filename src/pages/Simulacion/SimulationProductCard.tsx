@@ -18,7 +18,7 @@ export function SimulationProductCard({
   onUnitsChange,
 }: SimulationProductCardProps) {
   return (
-    <div className="w-[380px] min-w-[380px] bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col gap-3 p-4">
+    <div className="w-[380px] min-w-[380px] flex-none bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col gap-3 p-4">
       {/* 1) Header: nombre + input */}
       <div className="border border-blue-100 rounded-lg bg-blue-50 px-3 py-2 flex items-center justify-between gap-3">
         <div className="flex-1">
@@ -35,8 +35,8 @@ export function SimulationProductCard({
             # a simular
           </span>
           <Input
-            
-
+            type="number"
+            min={1}
             value={units}
             onChange={(e) => {
               const value = Number(e.target.value);
