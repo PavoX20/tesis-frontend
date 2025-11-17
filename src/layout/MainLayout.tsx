@@ -1,8 +1,10 @@
+// src/layout/MainLayout.tsx
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import Diagrama from "@/pages/Diagram/Diagram";
 import DatosPage from "@/pages/Datos/DatosPages";
+import Simulacion from "@/pages/Simulacion/Simulacion";
 
 const tabs = [
   { id: "diagrama", label: "Diagrama" },
@@ -12,7 +14,23 @@ const tabs = [
 ];
 
 export default function MainLayout() {
-  const [activeTab, setActiveTab] = useState("diagrama");
+  // 👉 leer pestaña guardada en localStorage (si existe)
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("mainLayout:activeTab");
+      if (stored && tabs.some((t) => t.id === stored)) {
+        return stored;
+      }
+    }
+    return "diagrama";
+  });
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mainLayout:activeTab", value);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-100 via-white to-blue-100 text-gray-900">
@@ -29,7 +47,7 @@ export default function MainLayout() {
           <CardContent className="pt-0">
             <Tabs
               value={activeTab}
-              onValueChange={setActiveTab}
+              onValueChange={handleTabChange}
               className="w-full flex flex-col items-center"
             >
               {/* Tabs */}
@@ -65,9 +83,7 @@ export default function MainLayout() {
                   value="simulacion"
                   className="rounded-xl bg-blue-50 p-0 min-h-[600px] shadow-inner"
                 >
-                  <p className="text-center text-gray-700 text-lg">
-                    Contenido de Simulación
-                  </p>
+                  <Simulacion />
                 </TabsContent>
                 <TabsContent
                   value="resultados"

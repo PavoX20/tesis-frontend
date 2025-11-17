@@ -1,3 +1,4 @@
+// src/pages/Diagram/DiagramCanvas/DiagramGraph.tsx
 import { ReactFlowProvider, type Node, type Edge } from "@xyflow/react";
 import { DiagramInner, type ProcessData } from "./DiagramInner";
 import { AddProcessDialog } from "./AddProcessDialog";
@@ -20,8 +21,11 @@ type DiagramGraphProps = {
 
   onNodeClick: (data: ProcessData) => void;
 
-  // 👇 NUEVO: id del diagrama a enfocar (normalmente el principal)
+  // 👇 id del diagrama a enfocar (normalmente el principal)
   focusDiagramId: number | null;
+
+  // 👉 modo solo-lectura (Simulación)
+  readOnly?: boolean;
 };
 
 export function DiagramGraph({
@@ -37,22 +41,26 @@ export function DiagramGraph({
   handleAddNode,
   onNodeClick,
   focusDiagramId,
+  readOnly = false,
 }: DiagramGraphProps) {
   return (
     <div className="relative h-full border-r border-blue-100 bg-white">
-      <div className="absolute top-3 right-3 z-10">
-        <AddProcessDialog
-          open={dialogOpen}
-          setOpen={setDialogOpen}
-          newNodeName={newNodeName}
-          setNewNodeName={setNewNodeName}
-          insertPos={insertPos}
-          setInsertPos={setInsertPos}
-          handleAddNode={handleAddNode}
-          productId={productId}
-          nodesLength={nodes.length}
-        />
-      </div>
+      {/* Botón + solo en modo edición */}
+      {!readOnly && (
+        <div className="absolute top-3 right-3 z-10">
+          <AddProcessDialog
+            open={dialogOpen}
+            setOpen={setDialogOpen}
+            newNodeName={newNodeName}
+            setNewNodeName={setNewNodeName}
+            insertPos={insertPos}
+            setInsertPos={setInsertPos}
+            handleAddNode={handleAddNode}
+            productId={productId}
+            nodesLength={nodes.length}
+          />
+        </div>
+      )}
 
       <ReactFlowProvider>
         <DiagramInner
@@ -60,6 +68,7 @@ export function DiagramGraph({
           edges={edges}
           onNodeClick={(_, node) => onNodeClick(node.data)}
           focusDiagramId={focusDiagramId}
+          readOnly={readOnly}
         />
       </ReactFlowProvider>
     </div>

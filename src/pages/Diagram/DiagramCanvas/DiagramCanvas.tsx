@@ -11,7 +11,15 @@ import {
   updateProceso,
 } from "@/api/procesosApi";
 
-export default function DiagramCanvas({ productId }: { productId: number }) {
+interface DiagramCanvasProps {
+  productId: number;
+  readOnly?: boolean;
+}
+
+export default function DiagramCanvas({
+  productId,
+  readOnly = false,
+}: DiagramCanvasProps) {
   const [nodes, setNodes] = useState<Node<ProcessData>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [newNodeName, setNewNodeName] = useState("");
@@ -276,6 +284,10 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
     }
   };
 
+  const containerClassName = readOnly
+    ? "flex w-full h-full bg-white"
+    : "flex w-full h-[550px] bg-white border border-blue-100 rounded-xl overflow-hidden";
+
   if (loading)
     return (
       <div className="flex-1 flex items-center justify-center text-gray-500">
@@ -291,9 +303,9 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
     );
 
   return (
-    <div className="flex w-full h-[550px] bg-white border border-blue-100 rounded-xl overflow-hidden">
+    <div className={containerClassName}>
       {/* Zona izquierda */}
-      <div className="w-1/2">
+      <div className={readOnly ? "w-full" : "w-1/2"}>
         <DiagramGraph
           nodes={nodes}
           edges={edges}
@@ -305,32 +317,37 @@ export default function DiagramCanvas({ productId }: { productId: number }) {
           insertPos={insertPos}
           setInsertPos={setInsertPos}
           handleAddNode={handleAddNode}
-          onNodeClick={(data) => setSelectedProcess(data)}
+          onNodeClick={(data) => {
+            if (!readOnly) setSelectedProcess(data);
+          }}
           // 👇 NUEVO: pasamos el diagrama a enfocar
           focusDiagramId={focusDiagramId}
+          readOnly={readOnly}
         />
       </div>
 
       {/* Zona derecha */}
-            <div className="w-1/2 p-6 overflow-y-auto bg-blue-50">
-        <ProcessDetailPanel
-          selectedProcess={selectedProcess}
-          catalogId={productId}
-          onSaved={async () => {
-            const updatedNodes = await fetchDiagram();
-            if (selectedProcess?.procesoId && updatedNodes) {
-              const updated = (updatedNodes as Node<ProcessData>[]).find(
-                (n) => n.data.procesoId === selectedProcess.procesoId
-              );
-              if (updated) setSelectedProcess(updated.data);
-            }
-          }}
-          onUnlink={async () => {
-            await fetchDiagram();   // recarga canvas
-            setSelectedProcess(null); // quita panel porque ya no está en el diagrama
-          }}
-        />
-      </div>
+      {!readOnly && (
+        <div className="w-1/2 p-6 overflow-y-auto bg-blue-50">
+          <ProcessDetailPanel
+            selectedProcess={selectedProcess}
+            catalogId={productId}
+            onSaved={async () => {
+              const updatedNodes = await fetchDiagram();
+              if (selectedProcess?.procesoId && updatedNodes) {
+                const updated = (updatedNodes as Node<ProcessData>[]).find(
+                  (n) => n.data.procesoId === selectedProcess.procesoId
+                );
+                if (updated) setSelectedProcess(updated.data);
+              }
+            }}
+            onUnlink={async () => {
+              await fetchDiagram(); // recarga canvas
+              setSelectedProcess(null); // quita panel porque ya no está en el diagrama
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

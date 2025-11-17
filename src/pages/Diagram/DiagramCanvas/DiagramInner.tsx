@@ -28,6 +28,7 @@ interface DiagramInnerProps {
   edges: Edge[];
   onNodeClick?: OnNodeClick;
   focusDiagramId: number | null;
+  readOnly?: boolean;
 }
 
 function TitleNode({ data }: { data: { label: string } }) {
@@ -51,6 +52,7 @@ export function DiagramInner({
   edges,
   onNodeClick,
   focusDiagramId,
+  readOnly = false,
 }: DiagramInnerProps) {
   const reactFlow = useReactFlow();
 
@@ -58,7 +60,7 @@ export function DiagramInner({
     onNodeClick?.(e, node as Node<ProcessData>);
   };
 
-  // 👉 Enfoque inicial SIN animación
+  // 👉 Enfoque inicial (fitView) con padding distinto según modo
   useLayoutEffect(() => {
     if (!nodes.length) return;
 
@@ -78,10 +80,10 @@ export function DiagramInner({
 
     reactFlow.fitView({
       nodes: targetNodes.map((n) => ({ id: n.id })),
-      padding: 0.2,
-      duration: 0, // 👈 SIN animación
+      padding: readOnly ? 1.2 : 0.2, 
+      duration: 0,
     });
-  }, [nodes, focusDiagramId, reactFlow]);
+  }, [nodes, focusDiagramId, reactFlow, readOnly]);
 
   return (
     <ReactFlow
@@ -92,8 +94,7 @@ export function DiagramInner({
         custom: CustomNode,
         title: TitleNode,
       }}
-      minZoom={0.8}
-      maxZoom={1.1}
+      // 👇 sin minZoom / maxZoom -> usa los valores por defecto, rango muy amplio
       panOnDrag
       zoomOnScroll
       zoomOnPinch
@@ -102,6 +103,8 @@ export function DiagramInner({
       elementsSelectable
     >
       <Background color="#eaeaea" gap={20} />
+
+      {/* Controles + / - visibles en ambos modos */}
       <Controls
         showFitView={false}
         showInteractive={false}
