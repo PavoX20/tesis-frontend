@@ -26,7 +26,8 @@ export interface DetalleProceso {
   pers: number;
   maq: number;
   area: string;
-  nombre_proceso?: string; // <--- Aquí es donde debe ir
+  nombre_proceso?: string; 
+  max_pers?: number; 
 }
 
 export interface SimulationResult {

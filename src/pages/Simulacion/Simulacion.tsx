@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getCatalogos } from "@/api/catalogoApi";
 import { runSimulation, type SimulationResult } from "@/api/simulacionApi"; 
-import { Loader2, PlayCircle, Trash2 } from "lucide-react";
+import { Loader2, PlayCircle, Trash2 } from "lucide-react"; // Quitamos RefreshCcw que no se usará
 import { useNavigate } from "react-router-dom";
 import { SimulationProductCard } from "./SimulationProductCard";
-import { Toaster, toast } from "sonner"; // Usamos 'toast' directamente
+import { Toaster, toast } from "sonner";
 
 interface Catalogo {
   id_catalogo: number;
@@ -13,7 +13,6 @@ interface Catalogo {
 }
 
 export default function Simulacion() {
-  // --- ESTADOS ---
   const [selectedProducts, setSelectedProducts] = useState<number[]>(() => {
     try {
       const stored = localStorage.getItem("simulacion:selectedProducts");
@@ -32,16 +31,17 @@ export default function Simulacion() {
     }
   });
 
+  const [manualAssignments, setManualAssignments] = useState<Record<string, number>>({});
   const [products, setProducts] = useState<Catalogo[]>([]);
   const [loading, setLoading] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const [simulationResults, setSimulationResults] = useState<Record<number, SimulationResult>>({});
 
   const navigate = useNavigate();
-
   const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
   // --- EFECTOS ---
+  
   useEffect(() => {
     const fetchCatalogos = async () => {
       try {
@@ -58,7 +58,6 @@ export default function Simulacion() {
     fetchCatalogos();
   }, []);
 
-  // Persistencia
   useEffect(() => {
     localStorage.setItem("simulacion:selectedProducts", JSON.stringify(selectedProducts));
   }, [selectedProducts]);
@@ -66,6 +65,39 @@ export default function Simulacion() {
   useEffect(() => {
     localStorage.setItem("simulacion:unitsByProduct", JSON.stringify(unitsByProduct));
   }, [unitsByProduct]);
+
+  // Auto-Preview (Carga estructura inicial sin simular)
+  useEffect(() => {
+    const pendingIds = selectedProducts.filter(id => !simulationResults[id]);
+    
+    if (pendingIds.length > 0 && !simulating) {
+      const fetchPreview = async () => {
+        try {
+          const payloadProducts = pendingIds.map(id => ({
+            id_catalogo: id,
+            cantidad: unitsByProduct[id] || 1
+          }));
+          
+          const resultsArray = await runSimulation({ 
+            productos: payloadProducts,
+            solo_info: true 
+          });
+
+          setSimulationResults(prev => {
+            const next = { ...prev };
+            resultsArray.forEach((res, index) => {
+              const originalRequest = payloadProducts[index];
+              if (originalRequest) next[originalRequest.id_catalogo] = res;
+            });
+            return next;
+          });
+        } catch(e) {
+          console.error("Error cargando preview", e);
+        }
+      };
+      fetchPreview();
+    }
+  }, [selectedProducts]); 
 
   // --- HANDLERS ---
   const toggleProduct = (id: number) => {
@@ -77,31 +109,38 @@ export default function Simulacion() {
   const clearSelection = () => {
     setSelectedProducts([]);
     setSimulationResults({});
+    setManualAssignments({});
+  };
+
+  const handleManualAssignment = (processId: string, quantity: number) => {
+    setManualAssignments(prev => {
+      if (quantity <= 0) {
+        const copy = { ...prev };
+        delete copy[processId];
+        return copy;
+      }
+      return { ...prev, [processId]: quantity };
+    });
   };
 
   const handleRunSimulation = async () => {
     if (selectedProducts.length === 0) return;
 
     setSimulating(true);
-    setSimulationResults({}); // Limpiar anteriores para efecto visual
-
+    
     try {
-      // 1. Preparar Payload
-      // Mapeamos los IDs seleccionados a objetos { id, cantidad }
-      // Importante: Guardamos este orden para mapear la respuesta después
       const payloadProducts = selectedProducts.map(id => ({
         id_catalogo: id,
         cantidad: unitsByProduct[id] || 1
       }));
 
-      // 2. Llamada API
-      const resultsArray = await runSimulation({ productos: payloadProducts });
+      const resultsArray = await runSimulation({ 
+        productos: payloadProducts,
+        asignacion_manual: manualAssignments 
+      });
 
-      // 3. Mapear respuesta (Array -> Objeto por ID)
       const newResultsMap: Record<number, SimulationResult> = {};
-
       resultsArray.forEach((res, index) => {
-        // Asumimos que el backend devuelve en el mismo orden (FIFO)
         const originalRequest = payloadProducts[index];
         if (originalRequest) {
           newResultsMap[originalRequest.id_catalogo] = res;
@@ -109,11 +148,11 @@ export default function Simulacion() {
       });
 
       setSimulationResults(newResultsMap);
-      toast.success("Simulación completada con éxito");
+      toast.success("Simulación completada");
 
     } catch (error) {
       console.error("Error simulando:", error);
-      toast.error("Ocurrió un error al simular. Revisa la consola.");
+      toast.error("Error en la simulación.");
     } finally {
       setSimulating(false);
     }
@@ -121,10 +160,8 @@ export default function Simulacion() {
 
   return (
     <div className="flex gap-6 h-[calc(100vh-100px)]">
-      {/* Componente Toaster necesario para ver las notificaciones */}
       <Toaster richColors position="top-right" />
 
-      {/* Sidebar */}
       <aside className="w-64 bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col h-full">
         <h2 className="text-lg font-semibold mb-4 text-blue-700">Simulador</h2>
         
@@ -162,37 +199,41 @@ export default function Simulacion() {
             )}
         </div>
 
-        {/* Footer Sidebar */}
         <div className="pt-4 border-t border-gray-100 space-y-3">
           <div className="flex justify-between items-center text-xs text-gray-500">
-             <span>{selectedProducts.length} seleccionados</span>
+             <span>{selectedProducts.length} prod.</span>
+             {Object.keys(manualAssignments).length > 0 && (
+                <span className="text-orange-500 text-[10px] font-bold">
+                  ({Object.keys(manualAssignments).length} fijos)
+                </span>
+             )}
              {selectedProducts.length > 0 && (
                <button onClick={clearSelection} className="text-red-500 hover:text-red-700 flex items-center gap-1">
-                 <Trash2 className="w-3 h-3" /> Limpiar
+                 <Trash2 className="w-3 h-3" />
                </button>
              )}
           </div>
           
+          {/* CAMBIO: Botón SIEMPRE verde y con el mismo texto */}
           <Button 
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 shadow-sm transition-all active:scale-95"
+            className="w-full font-bold h-12 shadow-sm transition-all active:scale-95 bg-green-600 hover:bg-green-700 text-white"
             onClick={handleRunSimulation}
             disabled={selectedProducts.length === 0 || simulating}
           >
             {simulating ? (
-              <> <Loader2 className="animate-spin mr-2 w-4 h-4" /> Calculando... </>
+              <> <Loader2 className="animate-spin mr-2 w-4 h-4" /> Simulando... </>
             ) : (
-              <> <PlayCircle className="mr-2 w-4 h-4" /> Ejecutar Simulación </>
+              <> <PlayCircle className="mr-2 w-4 h-4" /> Correr Simulación </>
             )}
           </Button>
         </div>
       </aside>
 
-      {/* Área Principal */}
       <div className="flex-1 min-w-0 bg-slate-50 rounded-xl border border-slate-200 shadow-inner relative overflow-hidden">
         {selectedProducts.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-gray-400 px-8">
             <PlayCircle className="w-12 h-12 mb-4 opacity-20" />
-            <p>Selecciona productos del menú izquierdo para comenzar.</p>
+            <p>Selecciona productos para comenzar.</p>
           </div>
         ) : (
           <div className="h-full w-full p-6 overflow-x-auto overflow-y-hidden custom-scrollbar">
@@ -205,10 +246,12 @@ export default function Simulacion() {
                     key={product.id_catalogo}
                     product={product}
                     units={unitsByProduct[product.id_catalogo] ?? 1}
-                    onUnitsChange={(value) =>
-                      setUnitsByProduct((prev) => ({ ...prev, [product.id_catalogo]: value }))
-                    }
+                    onUnitsChange={(value) => {
+                      setUnitsByProduct((prev) => ({ ...prev, [product.id_catalogo]: value }));
+                    }}
                     result={simulationResults[product.id_catalogo]}
+                    manualAssignments={manualAssignments}
+                    onManualAssignmentChange={handleManualAssignment}
                   />
                 );
               })}
