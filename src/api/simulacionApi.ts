@@ -36,17 +36,18 @@ export interface SimulationResult {
   es_factible: boolean;
   lista_materiales_total: Material[];
   analisis_escenarios: ReporteArea[];
-  
-  // Agregamos id_producto opcional para mapeo manual
   id_producto_frontend?: number; 
-  
-  // --- ESTE ES EL CAMPO QUE FALTABA Y QUE CAUSABA EL ERROR ---
   detalles_procesos: Record<string, DetalleProceso>;
 }
 
-export const runSimulation = async (
-  payload: { productos: { id_catalogo: number; cantidad: number }[]; asignacion_manual?: Record<string, number> }
-) => {
+// --- NUEVA INTERFAZ PARA EL INPUT ---
+export interface SimulationPayload {
+  productos: { id_catalogo: number; cantidad: number }[];
+  asignacion_manual?: Record<string, number>;
+  solo_info?: boolean; // <--- ESTO ES LO QUE FALTABA
+}
+
+export const runSimulation = async (payload: SimulationPayload) => {
   const response = await api.post<SimulationResult[]>("/simulacion/run", payload);
   return response.data;
 };

@@ -38,7 +38,6 @@ export function SimulationProductCard({
   const primerArea = reportesArea.length > 0 ? reportesArea[0] : null;
   const escenarios = primerArea?.escenarios || [];
   const mejorEscenario = escenarios.find(e => e.ranking === 1);
-  const totalEscenarios = primerArea?.total_combinaciones || 0;
   const listaPersonal = result ? Object.entries(result.detalles_procesos) : [];
 
   // MODO PREVIEW: Si el tiempo total es 0, es solo carga de estructura
