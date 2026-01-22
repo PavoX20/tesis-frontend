@@ -123,3 +123,21 @@
   display: none !important;
 }
 
+/* --- CORRECCIÓN EN EL SCROLLBAR --- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px; /* <--- ESTA LÍNEA ES CRUCIAL PARA EL SCROLL HORIZONTAL */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

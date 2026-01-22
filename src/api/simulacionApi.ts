@@ -1,0 +1,52 @@
+import api from "./axiosClient"; 
+
+export interface Material {
+  id_materia: number;
+  nombre: string;
+  cantidad_total: number;
+}
+
+export interface Escenario {
+  ranking: number;
+  ranking_score: number;
+  total_personal_usado: number;
+  total_maquinas_usadas: number;
+  detalle_asignacion: Record<string, { personal: number; maquinas: number; tiempo_base: number }>;
+}
+
+export interface ReporteArea {
+  id_area: number;
+  nombre_area: string;
+  total_combinaciones: number; 
+  escenarios: Escenario[];
+}
+
+export interface DetalleProceso {
+  t: number;
+  pers: number;
+  maq: number;
+  area: string;
+  nombre_proceso?: string; 
+  max_pers?: number; 
+}
+
+export interface SimulationResult {
+  diagrama_id: number;
+  tiempo_total: number;
+  es_factible: boolean;
+  lista_materiales_total: Material[];
+  analisis_escenarios: ReporteArea[];
+  
+  // Agregamos id_producto opcional para mapeo manual
+  id_producto_frontend?: number; 
+  
+  // --- ESTE ES EL CAMPO QUE FALTABA Y QUE CAUSABA EL ERROR ---
+  detalles_procesos: Record<string, DetalleProceso>;
+}
+
+export const runSimulation = async (
+  payload: { productos: { id_catalogo: number; cantidad: number }[]; asignacion_manual?: Record<string, number> }
+) => {
+  const response = await api.post<SimulationResult[]>("/simulacion/run", payload);
+  return response.data;
+};
