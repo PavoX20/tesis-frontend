@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Diagrama from "@/pages/Diagram/Diagram";
 import DatosPage from "@/pages/Datos/DatosPages";
 import Simulacion from "@/pages/Simulacion/Simulacion";
+import Results from "@/pages/Results/Results";
 
 const tabs = [
   { id: "diagrama", label: "Diagrama" },
@@ -89,9 +90,7 @@ export default function MainLayout() {
                   value="resultados"
                   className="rounded-xl bg-blue-50 p-0 min-h-[600px] shadow-inner"
                 >
-                  <p className="text-center text-gray-700 text-lg">
-                    Contenido de Resultados
-                  </p>
+                  <Results />
                 </TabsContent>
               </div>
             </Tabs>
