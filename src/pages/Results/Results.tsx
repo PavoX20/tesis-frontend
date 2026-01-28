@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { DashboardMetrics } from "@/components/context/resultsComponents/DashboardMetrics";
 import { PlaybackControls } from "@/components/context/resultsComponents/PlaybackControls";
 import { SimulationTables } from "@/components/context/resultsComponents/SimulationTables";
-import { PerformanceChart } from "@/components/context/resultsComponents/PerformanceChart"; // Nuevo Componente
 import { ChartPlaceholder } from "@/components/context/resultsComponents/ChartPlaceholder";
 import DiagramCanvas from "@/pages/Diagram/DiagramCanvas/DiagramCanvas"; 
 import { Loader2, Play, Settings2, Box, Package, ArrowLeft, RefreshCcw, Sliders } from "lucide-react";
@@ -16,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getCatalogos } from "@/api/catalogoApi"; 
 import { runVisualSimulation } from "@/api/simulacionApi";
-import type { VisualSimulationResponse, AnimationFrame, ProcessDetail } from "@/types/visual-types";
+import type { VisualSimulationResponse, AnimationFrame} from "@/types/visual-types";
 
 interface CatalogoSimple {
   id_catalogo: number;

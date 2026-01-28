@@ -8,7 +8,7 @@ interface DashboardMetricsProps {
   buffer: number;
 }
 
-export function DashboardMetrics({ modelName, time, bottleneck, buffer }: DashboardMetricsProps) {
+export function DashboardMetrics({ modelName, time }: DashboardMetricsProps) {
   
   // Función auxiliar para formatear segundos a MM:SS
   const formatSeconds = (sec: number) => {
