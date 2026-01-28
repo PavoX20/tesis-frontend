@@ -1,4 +1,5 @@
-import api from "./axiosClient"; 
+import api from "./axiosClient";
+import type { VisualSimulationResponse } from "../types/visual-types";
 
 export interface Material {
   id_materia: number;
@@ -47,7 +48,31 @@ export interface SimulationPayload {
   solo_info?: boolean; 
 }
 
+export interface SimulationPayload {
+  productos: { id_catalogo: number; cantidad: number }[];
+  asignacion_manual?: Record<string, number>;
+  solo_info?: boolean;
+  
+  // Nuevo campo para controlar la optimización desde el front
+  // 0.20 = 20% (Default)
+  umbral_pausa?: number; 
+}
+
+// --- FUNCIONES API ---
+
+// Simulación General (Costos/Personal)
 export const runSimulation = async (payload: SimulationPayload) => {
   const response = await api.post<SimulationResult[]>("/simulacion/run", payload);
+  return response.data;
+};
+
+// NUEVA: Simulación Visual / Optimización de Buffers (Angelo)
+export const runVisualSimulation = async (payload: SimulationPayload) => {
+  // Nota: El endpoint es /visual-run según configuramos en el backend
+  const response = await api.post<VisualSimulationResponse>("/simulacion/visual-run", payload,
+    { 
+      timeout: 120000 // 120,000 ms = 2 Minutos. Suficiente para la optimización.
+    }
+  );
   return response.data;
 };
