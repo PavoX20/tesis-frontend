@@ -1,4 +1,3 @@
-// src/pages/Datos/EditProcesoDialog.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
@@ -29,10 +28,10 @@ import { getDiagramasByCatalogo, type Diagrama } from "@/api/diagramaApi";
 import {
   listDatosProceso,
   type DatoProceso,
-  createDatoProceso, // NEW
+  createDatoProceso, 
+
 } from "@/api/datosProcesoApi";
 
-// --- helpers ---
 function normalizeCatalogList(cats: any): Catalogo[] {
   if (Array.isArray(cats)) return cats;
   if (cats?.data && Array.isArray(cats.data)) return cats.data;
@@ -40,15 +39,12 @@ function normalizeCatalogList(cats: any): Catalogo[] {
   return [];
 }
 
-// Asegura que cada medición tenga el campo id_catalogo,
-// aunque el backend lo devuelva como catalogo_id
 function normalizeDatosCatalogId(ds: any[]): { id_catalogo: number | null }[] {
   return (Array.isArray(ds) ? ds : []).map((d) => ({
     id_catalogo: (d as any).id_catalogo ?? (d as any).catalogo_id ?? null,
   }));
 }
 
-// devuelve el id_catalogo más frecuente (modo) de las mediciones
 function mostFrequentCatalogId(
   datos: { id_catalogo: number | null }[]
 ): number | null {
@@ -69,8 +65,6 @@ function mostFrequentCatalogId(
   return best;
 }
 
-
-// Convierte segundos (pueden ser decimales) a string tipo "0:00:21.000000"
 function secondsToIntervalString(totalSeconds: number): string {
   if (!Number.isFinite(totalSeconds)) return "";
 
@@ -87,16 +81,13 @@ function secondsToIntervalString(totalSeconds: number): string {
   const ss = seconds.toString().padStart(2, "0");
   const microStr = micros.toString().padStart(6, "0");
 
-  // Ejemplo: 0:00:21.000000
   return `${hours}:${mm}:${ss}.${microStr}`;
 }
 
-// Convierte un texto "min:seg" (o minutos decimales) a segundos totales
 function parseMinSec(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  // Formato "mm:ss" o "m:ss"
   if (trimmed.includes(":")) {
     const [mStr, sStr] = trimmed.split(":");
     const m = parseInt(mStr, 10);
@@ -105,13 +96,11 @@ function parseMinSec(value: string): number | null {
     return m * 60 + s;
   }
 
-  // Si no hay ":", interpretamos como minutos decimales
   const min = parseFloat(trimmed);
   if (Number.isNaN(min)) return null;
   return min * 60;
 }
 
-// Formatea segundos totales a "min:seg"
 function formatMinSec(totalSeconds: number): string {
   if (!Number.isFinite(totalSeconds)) return "";
   const total = Math.max(0, Math.round(totalSeconds));
@@ -120,7 +109,6 @@ function formatMinSec(totalSeconds: number): string {
   const ss = seconds.toString().padStart(2, "0");
   return `${minutes}:${ss}`;
 }
-
 
 type Props = {
   open: boolean;
@@ -138,17 +126,14 @@ export default function EditProcesoDialog({
   const [nombre, setNombre] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // combos
   const [catalogos, setCatalogos] = useState<Catalogo[]>([]);
   const [catalogoId, setCatalogoId] = useState<number | null>(null);
 
   const [diagramas, setDiagramas] = useState<Diagrama[]>([]);
   const [diagramaId, setDiagramaId] = useState<number | null>(null);
 
-  // datos de mediciones
   const [datos, setDatos] = useState<DatoProceso[]>([]);
 
-  // --- NEW: estado para nueva medición ---
   const [creatingDato, setCreatingDato] = useState(false);
   const [newDato, setNewDato] = useState<{
     fecha: string;
@@ -166,7 +151,6 @@ export default function EditProcesoDialog({
     notas: "",
   });
 
-  // helpers de conversión min ↔ seg
   const handleMinChange = (value: string) => {
     setNewDato((prev) => {
       const totalSeconds = parseMinSec(value);
@@ -184,7 +168,6 @@ export default function EditProcesoDialog({
     });
   };
 
-  // --- CARGA INICIAL (cuando se abre y cambia el proceso) ---
   useEffect(() => {
     if (!open || !proceso) return;
 
@@ -192,10 +175,10 @@ export default function EditProcesoDialog({
     setCatalogoId(proceso.catalogo_id ?? null);
     setDiagramaId(proceso.id_diagrama ?? null);
 
-    // reset mini-form cada vez que abres/ cambias proceso
     setNewDato((prev) => ({
       ...prev,
-      fecha: new Date().toISOString().slice(0, 10), // hoy
+      fecha: new Date().toISOString().slice(0, 10), 
+
       cantidad: "",
       tiempo_min: "",
       tiempo_seg: "",
@@ -264,7 +247,6 @@ export default function EditProcesoDialog({
     };
   }, [open, proceso]);
 
-  // --- cuando cambia el ARTÍCULO, recarga sus diagramas ---
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -317,7 +299,6 @@ export default function EditProcesoDialog({
     }
   }
 
-  // --- NEW: crear medición ---
   async function handleCreateDato() {
     if (!proceso) return;
     if (!catalogoId) {
@@ -329,7 +310,6 @@ export default function EditProcesoDialog({
       return;
     }
 
-    // Calcular segundos totales a partir de lo que haya ingresado el usuario
     const minStr = newDato.tiempo_min.trim();
     const segStr = newDato.tiempo_seg.trim();
     const minNumSeconds = parseMinSec(minStr);
@@ -366,10 +346,8 @@ export default function EditProcesoDialog({
         notas: newDato.notas.trim() !== "" ? newDato.notas.trim() : null,
       });
 
-      // Lo ponemos al inicio de la lista
       setDatos((prev) => [created, ...prev]);
 
-      // limpiamos cantidad/tiempos/operario/notas, mantenemos la fecha
       setNewDato((prev) => ({
         ...prev,
         cantidad: "",
@@ -404,9 +382,9 @@ export default function EditProcesoDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Formulario */}
+        {}
         <div className="space-y-4">
-          {/* Nombre */}
+          {}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Nombre del proceso
@@ -418,7 +396,7 @@ export default function EditProcesoDialog({
             />
           </div>
 
-          {/* Artículo */}
+          {}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Artículo
@@ -443,7 +421,7 @@ export default function EditProcesoDialog({
             </Select>
           </div>
 
-          {/* Diagrama */}
+          {}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Diagrama
@@ -478,13 +456,13 @@ export default function EditProcesoDialog({
 
         <Separator className="my-4" />
 
-        {/* Datos de medición */}
+        {}
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">
             Datos capturados (datos_proceso)
           </h3>
 
-          {/* NEW: formulario pequeña para nueva medición */}
+          {}
           {proceso && (
             <div className="border rounded-md p-3 bg-slate-50 space-y-2">
               <p className="text-xs font-medium text-slate-700">
@@ -521,7 +499,8 @@ export default function EditProcesoDialog({
                             setNewDato((p) => ({ ...p, fecha: "" }));
                             return;
                           }
-                          const iso = date.toISOString().slice(0, 10); // "YYYY-MM-DD"
+                          const iso = date.toISOString().slice(0, 10); 
+
                           setNewDato((p) => ({ ...p, fecha: iso }));
                         }}
                         initialFocus
@@ -609,7 +588,7 @@ export default function EditProcesoDialog({
             </div>
           )}
 
-          {/* Tabla de datos existentes */}
+          {}
           {datos.length === 0 ? (
             <div className="text-xs text-muted-foreground">
               No hay mediciones registradas para este proceso.

@@ -1,4 +1,3 @@
-// src/pages/Diagram/DiagramCanvas/DiagramGraph.tsx
 import { ReactFlowProvider, type Node, type Edge } from "@xyflow/react";
 import { DiagramInner, type ProcessData } from "./DiagramInner";
 import { AddProcessDialog } from "./AddProcessDialog";
@@ -21,10 +20,8 @@ type DiagramGraphProps = {
 
   onNodeClick: (data: ProcessData) => void;
 
-  // 👇 id del diagrama a enfocar (normalmente el principal)
   focusDiagramId: number | null;
 
-  // 👉 modo solo-lectura (Simulación)
   readOnly?: boolean;
 };
 
@@ -45,7 +42,7 @@ export function DiagramGraph({
 }: DiagramGraphProps) {
   return (
     <div className="relative h-full border-r border-blue-100 bg-white">
-      {/* Botón + solo en modo edición */}
+      {}
       {!readOnly && (
         <div className="absolute top-3 right-3 z-10">
           <AddProcessDialog

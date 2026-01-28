@@ -1,4 +1,3 @@
-// src/pages/Diagram/DiagramCanvas/DiagramInner.tsx
 import {
   ReactFlow,
   type Node,
@@ -18,7 +17,8 @@ export interface ProcessData extends Record<string, unknown> {
   orden?: number;
   distribucion?: string;
   parametros?: string;
-  diagramaId?: number; // id del diagrama al que pertenece el proceso
+  diagramaId?: number; 
+
 }
 
 type OnNodeClick = (e: React.MouseEvent, node: Node<ProcessData>) => void;
@@ -60,7 +60,6 @@ export function DiagramInner({
     onNodeClick?.(e, node as Node<ProcessData>);
   };
 
-  // 👉 Enfoque inicial (fitView) con padding distinto según modo
   useLayoutEffect(() => {
     if (!nodes.length) return;
 
@@ -94,7 +93,7 @@ export function DiagramInner({
         custom: CustomNode,
         title: TitleNode,
       }}
-      // 👇 sin minZoom / maxZoom -> usa los valores por defecto, rango muy amplio
+
       panOnDrag
       zoomOnScroll
       zoomOnPinch
@@ -104,7 +103,7 @@ export function DiagramInner({
     >
       <Background color="#eaeaea" gap={20} />
 
-      {/* Controles + / - visibles en ambos modos */}
+      {}
       <Controls
         showFitView={false}
         showInteractive={false}
@@ -113,3 +112,4 @@ export function DiagramInner({
     </ReactFlow>
   );
 }
+

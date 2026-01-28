@@ -1,5 +1,5 @@
 // src/api/analysisApi.ts
-import api from "./axiosClient"; // O desde donde exportes tu instancia de axios
+import api from "./axiosClient"; 
 
 export interface RankedItem {
   titulo: string;

@@ -8,7 +8,8 @@ interface CombinationsDialogProps {
   onClose: () => void;
   productName: string;
   scenarios: Escenario[];
-  processNames: Record<string, string>; // <--- NUEVO: Para traducir IDs a Nombres
+  processNames: Record<string, string>; 
+
 }
 
 export function CombinationsDialog({ isOpen, onClose, productName, scenarios, processNames }: CombinationsDialogProps) {
@@ -17,8 +18,8 @@ export function CombinationsDialog({ isOpen, onClose, productName, scenarios, pr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-6xl max-h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-200">
-        
-        {/* Header */}
+
+        {}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-slate-50">
           <div>
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -34,7 +35,7 @@ export function CombinationsDialog({ isOpen, onClose, productName, scenarios, pr
           </Button>
         </div>
 
-        {/* Tabla */}
+        {}
         <div className="flex-1 overflow-auto p-0 bg-white custom-scrollbar">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-100 text-gray-600 font-semibold sticky top-0 z-10 shadow-sm">
@@ -66,9 +67,9 @@ export function CombinationsDialog({ isOpen, onClose, productName, scenarios, pr
                   <td className="px-4 py-3 text-xs text-slate-600">
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(esc.detalle_asignacion).map(([pid, det]) => {
-                        // AQUÍ USAMOS EL MAPA PARA MOSTRAR EL NOMBRE
+
                         const nombreReal = processNames[pid] || `Proceso ${pid}`;
-                        
+
                         return (
                           <div key={pid} className="flex flex-col bg-slate-50 px-2 py-1 rounded border border-slate-100 min-w-[140px]">
                             <span className="text-[10px] text-slate-500 font-medium truncate max-w-[180px]" title={nombreReal}>
@@ -88,7 +89,7 @@ export function CombinationsDialog({ isOpen, onClose, productName, scenarios, pr
           </table>
         </div>
 
-        {/* Footer */}
+        {}
         <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
           <Button variant="secondary" onClick={onClose}>
             Cerrar Ventana

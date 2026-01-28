@@ -36,11 +36,11 @@ export default function Diagrama() {
 
   return (
     <div className="flex gap-6">
-      {/* Sidebar de productos */}
+      {}
       <aside className="w-64 bg-white border border-gray-200 rounded-xl shadow-sm p-4">
         <h2 className="text-lg font-semibold mb-4 text-blue-700">Productos</h2>
 
-        {/* Botón para editar productos */}
+        {}
         <Button
           variant="secondary"
           className="w-full mb-4 bg-blue-100 text-blue-700 hover:bg-blue-200"
@@ -75,7 +75,7 @@ export default function Diagrama() {
         )}
       </aside>
 
-      {/* Canvas del producto */}
+      {}
       <div className="flex-1 bg-blue-50 rounded-xl border border-blue-100 shadow-inner p-6 relative">
         {!selectedProduct ? (
           <div className="h-[550px] flex items-center justify-center text-gray-500 italic">

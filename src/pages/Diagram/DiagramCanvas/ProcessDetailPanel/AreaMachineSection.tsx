@@ -1,4 +1,3 @@
-// src/pages/Diagram/DiagramCanvas/ProcessDetailPanel/AreaMachineSection.tsx
 import { useMemo, useState } from "react";
 import axiosClient from "@/api/axiosClient";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,6 @@ export function AreaMachineSection({
   disabledMachine: boolean;
 }) {
 
-  // ---- Área combobox (con crear) ----
   function AreaCombobox({ areas, value, onChange }: {
     areas: Area[]; value: number | null; onChange: (id: number | null) => void;
   }) {
@@ -144,7 +142,6 @@ export function AreaMachineSection({
     );
   }
 
-  // ---- Tipo de máquina combobox (con crear) ----
   function TipoMaquinaCombobox({
     maquinas, value, onChange, disabled,
   }: {

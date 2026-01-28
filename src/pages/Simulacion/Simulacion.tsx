@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getCatalogos } from "@/api/catalogoApi";
 import { runSimulation, type SimulationResult } from "@/api/simulacionApi"; 
-import { Loader2, PlayCircle, Trash2 } from "lucide-react"; // Quitamos RefreshCcw que no se usará
+import { Loader2, PlayCircle, Trash2 } from "lucide-react"; 
+
 import { useNavigate } from "react-router-dom";
 import { SimulationProductCard } from "./SimulationProductCard";
 import { Toaster, toast } from "sonner";
@@ -40,8 +41,6 @@ export default function Simulacion() {
   const navigate = useNavigate();
   const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
-  // --- EFECTOS ---
-  
   useEffect(() => {
     const fetchCatalogos = async () => {
       try {
@@ -66,10 +65,9 @@ export default function Simulacion() {
     localStorage.setItem("simulacion:unitsByProduct", JSON.stringify(unitsByProduct));
   }, [unitsByProduct]);
 
-  // Auto-Preview (Carga estructura inicial sin simular)
   useEffect(() => {
     const pendingIds = selectedProducts.filter(id => !simulationResults[id]);
-    
+
     if (pendingIds.length > 0 && !simulating) {
       const fetchPreview = async () => {
         try {
@@ -77,7 +75,7 @@ export default function Simulacion() {
             id_catalogo: id,
             cantidad: unitsByProduct[id] || 1
           }));
-          
+
           const resultsArray = await runSimulation({ 
             productos: payloadProducts,
             solo_info: true 
@@ -99,7 +97,6 @@ export default function Simulacion() {
     }
   }, [selectedProducts]); 
 
-  // --- HANDLERS ---
   const toggleProduct = (id: number) => {
     setSelectedProducts((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
@@ -127,7 +124,7 @@ export default function Simulacion() {
     if (selectedProducts.length === 0) return;
 
     setSimulating(true);
-    
+
     try {
       const payloadProducts = selectedProducts.map(id => ({
         id_catalogo: id,
@@ -164,7 +161,7 @@ export default function Simulacion() {
 
       <aside className="w-64 bg-white border border-gray-200 rounded-xl shadow-sm p-4 flex flex-col h-full">
         <h2 className="text-lg font-semibold mb-4 text-blue-700">Simulador</h2>
-        
+
         <Button
           variant="secondary"
           className="w-full mb-4 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs h-8"
@@ -213,8 +210,8 @@ export default function Simulacion() {
                </button>
              )}
           </div>
-          
-          {/* CAMBIO: Botón SIEMPRE verde y con el mismo texto */}
+
+          {}
           <Button 
             className="w-full font-bold h-12 shadow-sm transition-all active:scale-95 bg-green-600 hover:bg-green-700 text-white"
             onClick={handleRunSimulation}

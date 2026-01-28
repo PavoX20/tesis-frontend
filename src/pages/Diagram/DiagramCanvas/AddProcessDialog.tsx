@@ -76,14 +76,11 @@ export function AddProcessDialog({
   const [processNames, setProcessNames] = useState<string[]>([]);
   const [comboOpen, setComboOpen] = useState(false);
 
-  // Cargar diagramas del catálogo
-  // dentro de AddProcessDialog
-
-  // Cargar diagramas del catálogo
   useEffect(() => {
     const fetchDiagramas = async () => {
       try {
-        const list = await getDiagramasPorCatalogo(productId); // ← ya viene normalizado (array)
+        const list = await getDiagramasPorCatalogo(productId); 
+
         setDiagramas(list);
         const hasPrincipal = list.some((d: any) => Boolean(d.es_principal));
         setIsPrincipalAllowed(!hasPrincipal);
@@ -103,7 +100,7 @@ export function AddProcessDialog({
       const params: any = { limit: 100 };
       if (!showAllNames) params.catalogo_id = productId;
 
-      const rows = await getProcesosLookup(params); // ← ya es ProcesoLookupRow[]
+      const rows = await getProcesosLookup(params); 
 
       const names: string[] = Array.from(
         new Set(
@@ -134,7 +131,8 @@ export function AddProcessDialog({
         id_catalogo: productId,
         es_principal: asPrincipal,
       };
-      const newDiagram = await createDiagrama(payload); // ← ya normalizado (objeto diagrama)
+      const newDiagram = await createDiagrama(payload); 
+
       setDiagramas((prev) => [...prev, newDiagram]);
       setSelectedDiagrama(newDiagram.id_diagrama);
       setNuevoDiagramaNombre("");
@@ -165,10 +163,12 @@ export function AddProcessDialog({
         const procesos = res.procesos || [];
         const siguiente = procesos.length + 1;
         setSiguientePosicion(siguiente);
-        setInsertPos(siguiente.toString()); // 🔹 sincroniza visualmente
+        setInsertPos(siguiente.toString()); 
+
       } catch {
         setSiguientePosicion(1);
-        setInsertPos("1"); // 🔹 asegura valor correcto en error o vacío
+        setInsertPos("1"); 
+
       }
     };
     fetchProcesos();
@@ -197,7 +197,7 @@ export function AddProcessDialog({
         </AlertDialogHeader>
 
         <div className="grid gap-4 py-2">
-          {/* Selección o creación de diagrama */}
+          {}
           {diagramas.length > 0 ? (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Diagrama</Label>
@@ -233,7 +233,7 @@ export function AddProcessDialog({
             </div>
           )}
 
-          {/* Crear nuevo diagrama */}
+          {}
           <div className="border-t pt-2 mt-2">
             <Label className="text-sm font-semibold mb-1 block">
               Crear nuevo diagrama
@@ -282,8 +282,8 @@ export function AddProcessDialog({
             </div>
           </div>
 
-          {/* Nombre y posición */}
-          {/* Nombre (combobox) y botón para alternar nombres */}
+          {}
+          {}
           <div className="grid grid-cols-4 items-center gap-4 mt-4">
             <Label className="text-right">Nombre del Proceso</Label>
             <div className="col-span-3 flex flex-col gap-2">
@@ -384,7 +384,8 @@ export function AddProcessDialog({
           </AlertDialogCancel>
           <AlertDialogAction
             disabled={isDisabled}
-            onClick={() => handleAddNode(selectedDiagrama)} // ✅ ahora válido
+            onClick={() => handleAddNode(selectedDiagrama)} 
+
           >
             Crear
           </AlertDialogAction>
@@ -393,3 +394,4 @@ export function AddProcessDialog({
     </AlertDialog>
   );
 }
+

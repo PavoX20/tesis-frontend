@@ -39,17 +39,14 @@ export function DependenciesSection({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // estado de dependencias actuales
   const [predecesores, setPredecesores] = useState<ProcesoLookupItem[]>([]);
-  const [sucesores, setSucesores] = useState<number[]>([]); // para bloquear ciclos básicos
+  const [sucesores, setSucesores] = useState<number[]>([]); 
 
-  // lookup
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [options, setOptions] = useState<ProcesoLookupItem[]>([]);
   const [optLoading, setOptLoading] = useState(false);
 
-  // cargar dependencias
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -79,7 +76,6 @@ export function DependenciesSection({
     };
   }, [procesoId]);
 
-  // filtros para lookup: mismo artículo, excluir proceso actual
   const debRef = useRef<number | null>(null);
   const effectiveFilters = useMemo(
     () => ({
@@ -102,22 +98,17 @@ export function DependenciesSection({
         const selectedIds = new Set(predecesores.map((p) => p.id_proceso));
         const successorsSet = new Set(sucesores);
 
-        // Solo procesos de OTROS diagramas del mismo artículo
         const filtered = items.filter((it) => {
           if (it.id_proceso === procesoId) return false;
 
-          // 🔹 NO mostrar procesos sin diagrama asignado
           if (it.id_diagrama == null) return false;
 
-          // 🔹 Opcional: seguir excluyendo procesos del mismo diagrama actual,
-          //     para que los predecesores vengan solo de otros diagramas
           if (diagramaIdActual != null && it.id_diagrama === diagramaIdActual)
             return false;
 
           if (selectedIds.has(it.id_proceso)) return false;
           if (successorsSet.has(it.id_proceso)) return false;
 
-          // 🔹 Aseguramos que sea del mismo artículo / catálogo
           if (catalogoIdActual != null && it.catalogo_id !== catalogoIdActual)
             return false;
 
@@ -161,7 +152,8 @@ export function DependenciesSection({
       await putPredecesores(
         procesoId,
         predecesores.map((p) => p.id_proceso),
-        false // permitir entre diagramas del mismo artículo
+        false 
+
       );
       onSaved?.();
     } catch (e: any) {
@@ -286,3 +278,4 @@ export function DependenciesSection({
     </div>
   );
 }
+

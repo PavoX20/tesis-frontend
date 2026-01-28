@@ -1,4 +1,3 @@
-// src/pages/Catalogo/ViewCatalogo.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -108,7 +107,7 @@ export default function ViewCatalogo() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Encabezado */}
+      {}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button
@@ -133,7 +132,7 @@ export default function ViewCatalogo() {
         </Button>
       </div>
 
-      {/* Tabla */}
+      {}
       <div className="border border-gray-200 rounded-xl shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
@@ -198,8 +197,8 @@ export default function ViewCatalogo() {
         </Table>
       </div>
 
-      {/* Dialog Crear/Editar */}
-      {/* Dialog Crear/Editar */}
+      {}
+      {}
 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
   <DialogContent>
     <DialogHeader>

@@ -1,4 +1,3 @@
-// src/pages/Diagram/DiagramCanvas/ProcessDetailPanel/RecipeSection.tsx
 import { useMemo, useState } from "react";
 import axiosClient from "@/api/axiosClient";
 import { Button } from "@/components/ui/button";

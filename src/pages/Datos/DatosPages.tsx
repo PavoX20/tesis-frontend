@@ -1,4 +1,3 @@
-// src/pages/Datos/DatosPages.tsx
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,25 +24,12 @@ import { getCatalogos } from "@/api/catalogoApi";
 import axiosClient from "@/api/axiosClient";
 import EditProcesoDialog from "./EditProcesoDialog";
 
-
-// type ProcesoLookup = {
-//   id_proceso: number;
-//   nombre_proceso: string;
-//   orden?: number | null;
-//   id_diagrama: number;
-//   tipo?: string | null;
-//   diagrama_nombre?: string | null;
-//   catalogo_id?: number | null;
-//   catalogo_nombre?: string | null;
-// };
-
-// Encuentra un array de objetos en el payload (hasta 3 niveles)
 function findArrayDeep(obj: any, depth = 0): any[] | null {
   if (!obj || depth > 3) return null;
   if (Array.isArray(obj)) return obj;
 
   if (typeof obj === "object") {
-    // pistas comunes primero
+
     const candidates = [
       obj.data,
       obj.items,
@@ -59,7 +45,6 @@ function findArrayDeep(obj: any, depth = 0): any[] | null {
       if (found) return found;
     }
 
-    // si nada anterior, escanear todas las propiedades
     for (const v of Object.values(obj)) {
       const found = findArrayDeep(v, depth + 1);
       if (found) return found;
@@ -114,7 +99,7 @@ function CreateProcesoDialog({
 
   const handleClose = (value: boolean) => {
     if (!value) {
-      // reset al cerrar
+
       setNombre("");
       setTipo("");
       setCatalogoId(null);
@@ -130,16 +115,19 @@ function CreateProcesoDialog({
   try {
     const payload: any = {
       nombre_proceso: nombre.trim(),
-      id_diagrama: null,   // lo creamos "suelto"
+      id_diagrama: null,   
+
       orden: null,
     };
 
     if (tipo) {
-      payload.tipo = tipo; // "NORMAL" o "ALMACENAMIENTO"
+      payload.tipo = tipo; 
+
     }
 
     if (catalogoId != null) {
-      payload.id_catalogo = catalogoId;   // 👈 ENVIAMOS EL ARTÍCULO
+      payload.id_catalogo = catalogoId;   
+
     }
 
     await axiosClient.post("/procesos/", payload);
@@ -260,7 +248,6 @@ export default function DatosPages() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
 
-  // Para depurar la respuesta cruda cuando no hay filas
   const [rawPayload, setRawPayload] = useState<any>(null);
   const [showRaw, setShowRaw] = useState(false);
 
@@ -283,7 +270,7 @@ export default function DatosPages() {
 
   useEffect(() => {
     load(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   async function load(initial = false) {
@@ -296,13 +283,13 @@ export default function DatosPages() {
         limit: 100,
       });
 
-      setRawPayload(data); // guardamos crudo para depurar si hiciera falta
+      setRawPayload(data); 
+
       const normalized = toLookupArray(data);
       setRows(normalized);
 
       if (normalized.length === 0) {
-        // ayuda visual para detectar formatos inesperados
-        // eslint-disable-next-line no-console
+
         console.debug("[Datos] /procesos/lookup payload crudo:", data);
       }
     } catch (e: any) {
@@ -313,7 +300,7 @@ export default function DatosPages() {
         : e?.message || "Error desconocido";
       setErrorMsg(`Error al cargar procesos: ${msg}`);
       setRows([]);
-      // eslint-disable-next-line no-console
+
       console.error("getProcesosLookup failed:", e);
     } finally {
       setLoading(false);
@@ -371,14 +358,14 @@ export default function DatosPages() {
         >
           Limpiar
         </Button>
-        {/* botón de depuración opcional */}
+        {}
         <Button
           type="button"
           variant="ghost"
           className="ml-auto"
           onClick={() => setShowRaw(v => !v)}
         >
-          
+
         </Button>
       </form>
 

@@ -10,7 +10,7 @@ if (!API_BASE_URL) {
 }
 
 const axiosClient = axios.create({
-  // 2. Usamos la variable dinámica
+
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",

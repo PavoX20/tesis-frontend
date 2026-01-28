@@ -40,11 +40,11 @@ export interface SimulationResult {
   detalles_procesos: Record<string, DetalleProceso>;
 }
 
-// --- NUEVA INTERFAZ PARA EL INPUT ---
+
 export interface SimulationPayload {
   productos: { id_catalogo: number; cantidad: number }[];
   asignacion_manual?: Record<string, number>;
-  solo_info?: boolean; // <--- ESTO ES LO QUE FALTABA
+  solo_info?: boolean; 
 }
 
 export const runSimulation = async (payload: SimulationPayload) => {

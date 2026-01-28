@@ -64,10 +64,7 @@ export async function updateProcesoTipo(
   return res.data;
 }
 
-/* ---------------------------
-   🔧 Normalizador robusto
----------------------------- */
-// Normalizador “defensivo” por si el backend envía {data} o {rows} u otro envoltorio:
+
 function unwrapLookupPayload(payload: unknown): ProcesoLookupRow[] {
   const p = payload as any;
   const arr =

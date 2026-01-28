@@ -5,7 +5,7 @@ export type DatoProceso = {
   id_medicion: number;
   id_proceso: number;
   cantidad: number | null;
-  fecha: string;              // "YYYY-MM-DD"
+  fecha: string;              
   tiempo_total_min: string | null;
   tiempo_total_seg: string | null;
   operario: string | null;
@@ -15,14 +15,14 @@ export type DatoProceso = {
 
 
 
-// Normaliza un registro devuelto por la API a nuestro tipo DatoProceso
+
 function mapDato(r: any): DatoProceso {
   return {
     id_medicion: Number(r.id_medicion),
     id_proceso: Number(r.id_proceso),
     cantidad: r.cantidad != null ? Number(r.cantidad) : null,
     fecha: String(r.fecha),
-    // 👇 dejamos los textos tal cual vienen del backend
+
     tiempo_total_min:
       r.tiempo_total_min !== undefined && r.tiempo_total_min !== null
         ? String(r.tiempo_total_min)
@@ -54,12 +54,12 @@ export async function listDatosProceso(
   return arr.map(mapDato);
 }
 
-// Crear una nueva medición para un proceso y artículo concretos
+
 export async function createDatoProceso(input: {
   id_proceso: number;
   id_catalogo: number;
   cantidad: number | null;
-  fecha: string; // "YYYY-MM-DD"
+  fecha: string; 
   tiempo_total_min: string | null;
   tiempo_total_seg: string | null;
   operario: string | null;
