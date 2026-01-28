@@ -1,4 +1,3 @@
-// src/pages/Diagram/DiagramCanvas/ProcessDetailPanel/ProcessDetailPanel.tsx
 import { useEffect, useRef, useState } from "react";
 import axiosClient from "@/api/axiosClient";
 import { Button } from "@/components/ui/button";
@@ -19,14 +18,14 @@ import { RecipeSection } from "./RecipeSection";
 import { DependenciesSection } from "./DependenciesSection";
 import { ProcessDistributionCard } from "./ProcessDistributionCard";
 
-// -------- Tipos locales ----------
 export interface ProcessData {
   label: string;
   procesoId?: number;
   orden?: number;
   distribucion?: string;
   parametros?: string | unknown;
-  diagramaId?: number; // <-- agregar
+  diagramaId?: number; 
+
 }
 type Unidad = "M2" | "PAR" | "KG" | "UNIDAD";
 type TipoMateria = "materia_prima" | "materia_procesada" | "otro";
@@ -55,12 +54,12 @@ type RecetaLineaVM = { materiaId: number | null; cantidad: string };
 
 interface ProcessDetailPanelProps {
   selectedProcess: ProcessData | null;
-  catalogId?: number; // id_catalogo del artículo activo
+  catalogId?: number; 
+
   onSaved?: () => void;
   onUnlink?: () => void;
 }
 
-// -------- Mini API ----------
 async function apiGetMaterias(limit = 1000): Promise<Materia[]> {
   const { data } = await axiosClient.get<Materia[]>("/materias", {
     params: { limit },
@@ -130,7 +129,6 @@ async function apiGetProcesoDetalle(procesoId: number): Promise<{
   return data;
 }
 
-// -------- Helpers ----------
 const PARAMS_COUNT: Record<string, number> = {
   norm: 2,
   expon: 2,
@@ -164,7 +162,6 @@ const normalize = (arr: RecetaLineaVM[]) =>
     )
     .sort((a, b) => a.id_materia - b.id_materia || a.cantidad - b.cantidad);
 
-// -------- Componente ----------
 export function ProcessDetailPanel({
   selectedProcess,
   catalogId,
@@ -179,16 +176,14 @@ export function ProcessDetailPanel({
   const [initialForm, setInitialForm] = useState(form);
   const [loading, setLoading] = useState(false);
 
-  // diagrama actual (para filtrar lookup de dependencias)
   const [diagramId, setDiagramId] = useState<number | null>(null);
-  // receta
+
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [entradas, setEntradas] = useState<RecetaLineaVM[]>([]);
   const [salidas, setSalidas] = useState<RecetaLineaVM[]>([]);
   const [initEntradas, setInitEntradas] = useState<RecetaLineaVM[]>([]);
   const [initSalidas, setInitSalidas] = useState<RecetaLineaVM[]>([]);
 
-  // áreas y máquinas
   const [areas, setAreas] = useState<Area[]>([]);
   const [areaId, setAreaId] = useState<number | null>(null);
   const [tmList, setTmList] = useState<TipoMaquina[]>([]);
@@ -196,7 +191,7 @@ export function ProcessDetailPanel({
   const [tmIdInitial, setTmIdInitial] = useState<number | null>(null);
   const [tmListAreaId, setTmListAreaId] = useState<number | null>(null);
   const prevAreaIdRef = useRef<number | null>(null);
-  // tipo de proceso (NORMAL | ALMACENAMIENTO)
+
   const [tipo, setTipo] = useState<"NORMAL" | "ALMACENAMIENTO">("NORMAL");
   const [tipoInitial, setTipoInitial] = useState<"NORMAL" | "ALMACENAMIENTO">(
     "NORMAL"
@@ -214,7 +209,6 @@ export function ProcessDetailPanel({
     }));
   }, [paramsCount]);
 
-  // carga por proceso
   useEffect(() => {
     if (!selectedProcess?.procesoId) return;
 
@@ -285,7 +279,6 @@ export function ProcessDetailPanel({
     })();
   }, [selectedProcess?.procesoId]);
 
-  // recarga lista al cambiar área
   useEffect(() => {
     (async () => {
       const list = await apiGetTiposMaquinas(areaId ?? undefined);
@@ -298,7 +291,6 @@ export function ProcessDetailPanel({
     prevAreaIdRef.current = areaId ?? null;
   }, [areaId]);
 
-  // valida máquina vs área (evita “Seleccionar máquina…” tras guardar)
   useEffect(() => {
     if (tmId == null || areaId == null) return;
     if (tmListAreaId !== areaId) return;
@@ -309,7 +301,6 @@ export function ProcessDetailPanel({
     if (!ok) setTmId(null);
   }, [tmList, areaId, tmId, tmListAreaId]);
 
-  // receta helpers
   const addEntrada = () =>
     setEntradas((l) => [...l, { materiaId: null, cantidad: "" }]);
   const addSalida = () =>
@@ -425,7 +416,7 @@ export function ProcessDetailPanel({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto pr-2">
-        {/* Meta */}
+        {}
         <div className="space-y-3 pb-4 border-b border-gray-200 mb-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-800">
@@ -458,7 +449,7 @@ export function ProcessDetailPanel({
           </div>
         </div>
 
-        {/* Receta */}
+        {}
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Receta del proceso</h2>
           <RecipeSection
@@ -499,7 +490,7 @@ export function ProcessDetailPanel({
 
         <Separator className="my-6" />
 
-        {/* Área y Máquina */}
+        {}
         <AreaMachineSection
           areas={areas}
           areaId={areaId}
@@ -514,7 +505,7 @@ export function ProcessDetailPanel({
 
         <Separator className="my-6" />
 
-        {/* Tipo de Proceso */}
+        {}
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Tipo de Proceso</h2>
           <div>
@@ -537,9 +528,6 @@ export function ProcessDetailPanel({
         </div>
 
         <Separator className="my-6" />
-
-        
-        
 
         <ProcessDistributionCard process={selectedProcess} />
       </div>
@@ -567,3 +555,4 @@ export function ProcessDetailPanel({
     </div>
   );
 }
+

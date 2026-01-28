@@ -10,7 +10,7 @@ export interface ProcessTableRow {
   maquinas_count: number;
   personal_count: number;
   meta: number;
-  progreso: number; // <--- NUEVO CAMPO
+  progreso: number; 
   activo: boolean; 
   estado: "ESPERANDO" | "BLOQUEADO" | "FINALIZADO" | "TRABAJANDO" | "EN COLA";
   tiempo_activo: number;
@@ -41,7 +41,7 @@ export interface SimulationFrame {
   tabla_personal: PersonalRow[];
 }
 
-// Estructura para la Gráfica
+
 export interface ChartDataPoint {
   nombre: string;
   ideal_activo: number;
@@ -58,6 +58,6 @@ export interface VisualSimulationResponse {
     items_producidos: number;
   };
   timeline: SimulationFrame[];
-  grafica: ChartDataPoint[]; // <--- NUEVO CAMPO
+  grafica: ChartDataPoint[]; 
   grafica_base64?: string;
 }

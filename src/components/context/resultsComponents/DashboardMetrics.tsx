@@ -17,7 +17,7 @@ export function DashboardMetrics({ modelName, time, bottleneck, buffer }: Dashbo
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* 1. MODELO */}
+      {}
       <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-4 flex items-start justify-between">
           <div>
@@ -32,7 +32,7 @@ export function DashboardMetrics({ modelName, time, bottleneck, buffer }: Dashbo
         </CardContent>
       </Card>
 
-      {/* 2. TIEMPO */}
+      {}
       <Card className="border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-4 flex items-start justify-between">
           <div>
@@ -47,7 +47,7 @@ export function DashboardMetrics({ modelName, time, bottleneck, buffer }: Dashbo
         </CardContent>
       </Card>
 
-      {/* 3. CUELLO DE BOTELLA (Dinámico) */}
+      {}
       <Card className="border-l-4 border-l-red-500 shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-4 flex items-start justify-between">
           <div className="flex-1">
@@ -71,7 +71,7 @@ export function DashboardMetrics({ modelName, time, bottleneck, buffer }: Dashbo
         </CardContent>
       </Card>
 
-      {/* 4. BUFFER STOCK */}
+      {}
       <Card className="border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-4 flex items-start justify-between">
           <div>

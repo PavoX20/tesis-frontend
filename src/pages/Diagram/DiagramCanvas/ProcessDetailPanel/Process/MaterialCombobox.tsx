@@ -1,4 +1,3 @@
-// src/pages/Process/MaterialCombobox.tsx
 import { useMemo, useState } from "react";
 import { ChevronsUpDown, Plus } from "lucide-react";
 
@@ -34,22 +33,23 @@ import {
 } from "@/components/ui/select";
 
 import { cn } from "@/lib/utils";
-import type { Materia } from "@/api/materiasApi"; // <- type-only
+import type { Materia } from "@/api/materiasApi"; 
+
 import { createMateria } from "@/api/materiasApi";
 
 type Props = {
   materias: Materia[] | unknown;
-  value: number | null; // id_materia
+  value: number | null; 
+
   onChange: (id: number | null) => void;
   className?: string;
-  unidadValue?: string; // opcional: unidad seleccionada fuera
+  unidadValue?: string; 
+
   onUnidadChange?: (u: string) => void;
 };
 
-// tipos y estado
 const UNIDADES = ["KG", "M2", "PAR", "UNIDAD"] as const;
 type Unidad = (typeof UNIDADES)[number];
-
 
 export default function MaterialCombobox({
   materias,
@@ -62,7 +62,8 @@ export default function MaterialCombobox({
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
-  const [nuevaUnidad, setNuevaUnidad] = useState<Materia["unidad"]>("UNIDAD"); // <- union
+  const [nuevaUnidad, setNuevaUnidad] = useState<Materia["unidad"]>("UNIDAD"); 
+
   const [nuevoTipo, setNuevoTipo] = useState<
     "materia_prima" | "materia_procesada" | "otro"
   >("materia_prima");
@@ -70,7 +71,8 @@ export default function MaterialCombobox({
 
   const safeMaterias = Array.isArray(materias) ? materias : [];
   const selected = useMemo(
-    () => safeMaterias.find((m) => m.id_materia === value) ?? null, // <- usa safeMaterias
+    () => safeMaterias.find((m) => m.id_materia === value) ?? null, 
+
     [safeMaterias, value]
   );
 
@@ -78,7 +80,8 @@ export default function MaterialCombobox({
     if (!nuevoNombre.trim()) return;
     const created = await createMateria({
       nombre: nuevoNombre.trim(),
-      unidad: nuevaUnidad, // <- tipo correcto
+      unidad: nuevaUnidad, 
+
       tipo: nuevoTipo,
       costo: Number(costo) || 0,
     });
@@ -92,7 +95,7 @@ export default function MaterialCombobox({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {/* Combobox de materias */}
+      {}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -141,7 +144,7 @@ export default function MaterialCombobox({
         </PopoverContent>
       </Popover>
 
-      {/* Selector de unidad opcional */}
+      {}
       {onUnidadChange && (
         <Select
           value={unidadValue ?? selected?.unidad ?? "UNIDAD"}
@@ -160,7 +163,7 @@ export default function MaterialCombobox({
         </Select>
       )}
 
-      {/* Dialog crear materia */}
+      {}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
@@ -234,3 +237,4 @@ export default function MaterialCombobox({
     </div>
   );
 }
+

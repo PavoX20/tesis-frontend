@@ -32,10 +32,11 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
             data={data}
             layout="vertical"
             margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-            barSize={12} // Barras finas y elegantes
+            barSize={12} 
+
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#e2e8f0" />
-            
+
             <XAxis type="number" fontSize={10} stroke="#94a3b8" />
             <YAxis 
                 dataKey="nombre" 
@@ -45,17 +46,17 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
                 stroke="#64748b" 
                 tick={{ fill: '#475569' }}
             />
-            
+
             <Tooltip 
                 cursor={{fill: '#f1f5f9'}}
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
             />
             <Legend wrapperStyle={{ fontSize: '10px' }} />
-            
-            {/* Barras Apiladas: IDEAL */}
+
+            {}
             <Bar dataKey="ideal_activo" name="Ideal (Teórico)" stackId="a" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-            
-            {/* Barras Apiladas: REAL */}
+
+            {}
             <Bar dataKey="real_activo" name="Real (Trabajo)" stackId="b" fill="#22c55e" />
             <Bar dataKey="real_pausado" name="Real (Espera)" stackId="b" fill="#f59e0b" radius={[0, 4, 4, 0]} />
           </BarChart>

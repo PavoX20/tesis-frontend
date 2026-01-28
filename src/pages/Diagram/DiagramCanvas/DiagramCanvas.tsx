@@ -11,7 +11,6 @@ import {
   updateProceso,
 } from "@/api/procesosApi";
 
-// 👇 DEFINICIÓN DEL ESTADO VISUAL (Igual que en tus types)
 interface VisualNodeState {
   cola: number;
   ocupado: boolean;
@@ -21,14 +20,15 @@ interface VisualNodeState {
 interface DiagramCanvasProps {
   productId: number;
   readOnly?: boolean;
-  // 👇 NUEVA PROP: Recibe el estado actual de la animación
+
   simulationState?: Record<string, VisualNodeState>;
 }
 
 export default function DiagramCanvas({
   productId,
   readOnly = false,
-  simulationState, // 👈 Recibimos el estado
+  simulationState, 
+
 }: DiagramCanvasProps) {
   const [nodes, setNodes] = useState<Node<ProcessData>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -43,45 +43,41 @@ export default function DiagramCanvas({
 
   const [focusDiagramId, setFocusDiagramId] = useState<number | null>(null);
 
-  // --- EFECTO VISUAL DE SIMULACIÓN ---
-  // Este efecto corre cada vez que el "frame" de la simulación cambia
   useEffect(() => {
     if (!simulationState || nodes.length === 0) return;
 
     setNodes((currentNodes) =>
       currentNodes.map((node) => {
-        // Obtenemos el ID real del proceso (ej. 4)
+
         const processId = node.data.procesoId;
 
-        // Buscamos si existe estado para este proceso en el frame actual
-        // Convertimos a string porque las keys del JSON suelen ser strings
         const state = simulationState[String(processId)];
 
         if (state) {
-          // Si el proceso está en la simulación, actualizamos su estilo
+
           const isBusy = state.ocupado;
 
           return {
             ...node,
             style: {
               ...node.style,
-              // Si está ocupado: Fondo Naranja suave, Borde Naranja fuerte
-              // Si está libre: Fondo Blanco, Borde normal
-              backgroundColor: isBusy ? "#ffedd5" : "#ffffff", // orange-100
-              borderColor: isBusy ? "#f97316" : "transparent", // orange-500
+
+              backgroundColor: isBusy ? "#ffedd5" : "#ffffff", 
+
+              borderColor: isBusy ? "#f97316" : "transparent", 
+
               borderWidth: isBusy ? "2px" : "0px",
-              transition: "background-color 0.2s, border-color 0.2s", // Animación suave
+              transition: "background-color 0.2s, border-color 0.2s", 
+
             },
             data: {
               ...node.data,
-              // CAMBIO APLICADO: Ya no concatenamos "(Cola: ...)"
-              // Simplemente dejamos el label original que viene de la BD.
+
               label: node.data.label,
             },
           };
         }
 
-        // Si no hay estado (o se reseteó), volver a estilo original
         return {
           ...node,
           style: {
@@ -93,7 +89,7 @@ export default function DiagramCanvas({
         };
       }),
     );
-  }, [simulationState]); // 👈 Dependencia clave: se ejecuta al cambiar el frame
+  }, [simulationState]); 
 
   const fetchDiagram = async (): Promise<Node<ProcessData>[]> => {
     setLoading(true);
@@ -127,7 +123,6 @@ export default function DiagramCanvas({
         return (minLeft + maxRight) / 2 - 20;
       };
 
-      // Crear nodos del diagrama principal
       const principalNodes: Node<ProcessData>[] = (principal.procesos || [])
         .sort((a: any, b: any) => a.orden - b.orden)
         .map((p: any, i: number) => ({
@@ -394,3 +389,4 @@ export default function DiagramCanvas({
     </div>
   );
 }
+

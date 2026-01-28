@@ -19,8 +19,8 @@ export function PlaybackControls({
   return (
     <TooltipProvider delayDuration={0}>
       <div className="bg-slate-900/90 backdrop-blur-xl text-white rounded-full p-3 shadow-2xl flex items-center gap-4 border border-slate-700/50 ring-1 ring-black/5 mx-auto max-w-[600px] hover:scale-[1.01] transition-transform duration-300">
-        
-        {/* Play/Pause Main Button */}
+
+        {}
         <Button 
           size="icon" 
           className={`h-10 w-10 rounded-full shrink-0 transition-all ${
@@ -33,7 +33,7 @@ export function PlaybackControls({
           {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
         </Button>
 
-        {/* Reset */}
+        {}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" onClick={onReset} className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-full shrink-0">
@@ -43,7 +43,7 @@ export function PlaybackControls({
           <TooltipContent side="top" className="bg-black text-xs">Reiniciar</TooltipContent>
         </Tooltip>
 
-        {/* Slider - Custom Styled */}
+        {}
         <div className="flex-1 px-2 group">
           <Slider 
             value={[progress]} 
@@ -54,7 +54,7 @@ export function PlaybackControls({
           />
         </div>
 
-        {/* Speed Selector */}
+        {}
         <div className="flex items-center border-l border-white/10 pl-4">
              <Button 
                 variant="ghost" 

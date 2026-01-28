@@ -123,10 +123,9 @@
   display: none !important;
 }
 
-/* --- CORRECCIÓN EN EL SCROLLBAR --- */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
-  height: 6px; /* <--- ESTA LÍNEA ES CRUCIAL PARA EL SCROLL HORIZONTAL */
+  height: 6px; 
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {

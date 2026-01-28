@@ -4,7 +4,7 @@ import DiagramCanvas from "@/pages/Diagram/DiagramCanvas/DiagramCanvas";
 import type { SimulationResult } from "@/api/simulacionApi";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-// CAMBIO 1: Reemplazamos HardHat por Users
+
 import { Clock, Package, Users, Settings2, Table, Play } from "lucide-react";
 import { CombinationsDialog } from "./CombinationsDialog";
 
@@ -30,20 +30,17 @@ export function SimulationProductCard({
   manualAssignments,
   onManualAssignmentChange,
 }: SimulationProductCardProps) {
-  
+
   const [showCombinations, setShowCombinations] = useState(false);
 
-  // Extraer datos con seguridad
   const reportesArea = result?.analisis_escenarios || [];
   const primerArea = reportesArea.length > 0 ? reportesArea[0] : null;
   const escenarios = primerArea?.escenarios || [];
   const mejorEscenario = escenarios.find(e => e.ranking === 1);
   const listaPersonal = result ? Object.entries(result.detalles_procesos) : [];
 
-  // MODO PREVIEW: Si el tiempo total es 0, es solo carga de estructura
   const isPreview = !result || result.tiempo_total === 0;
 
-  // Mapa de nombres para el Modal (ID -> Nombre Real)
   const processNamesMap = listaPersonal.reduce((acc, [pid, info]) => {
     acc[pid] = info.nombre_proceso || `Proceso ${pid}`;
     return acc;
@@ -52,8 +49,8 @@ export function SimulationProductCard({
   return (
     <>
       <div className="w-[480px] min-w-[480px] flex-none bg-white border border-gray-200 rounded-xl shadow-md flex flex-col gap-0 overflow-hidden hover:shadow-lg transition-all">
-        
-        {/* HEADER */}
+
+        {}
         <div className="bg-slate-50 border-b border-slate-100 p-3 flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Producto</p>
@@ -76,16 +73,16 @@ export function SimulationProductCard({
           </div>
         </div>
 
-        {/* BODY */}
+        {}
         <div className="flex-1 flex flex-col gap-4 p-4 overflow-y-auto custom-scrollbar" style={{ maxHeight: '650px' }}>
-          
-          {/* 1. SECCIÓN DE RESULTADOS */}
+
+          {}
           <div className="space-y-2">
             <div className="flex justify-between items-end">
               <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> Eficiencia
               </h4>
-              
+
             </div>
 
             <div className="border border-gray-200 rounded-lg bg-gray-50/30 p-3 shadow-sm min-h-[50px] flex flex-col justify-center">
@@ -123,16 +120,16 @@ export function SimulationProductCard({
             </div>
           </div>
 
-          {/* 2. TABLA DE ASIGNACIÓN */}
+          {}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              {/* CAMBIO 2: Usamos el icono Users aquí */}
+              {}
               <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1">
                 <Users className="w-3 h-3" /> Personal
               </h4>
               <span className="text-[9px] text-gray-400 uppercase tracking-wide">Asignación</span>
             </div>
-            
+
             <div className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
               {!result ? (
                 <p className="text-xs text-gray-400 italic text-center py-6">Cargando...</p>
@@ -150,13 +147,13 @@ export function SimulationProductCard({
                       {listaPersonal.map(([pid, info]) => {
                         const manualVal = manualAssignments[pid];
                         const isManual = manualVal !== undefined && manualVal > 0;
-                        
+
                         return (
                           <tr key={pid} className={`transition-colors ${isManual ? 'bg-orange-50/40' : 'hover:bg-slate-50'}`}>
                             <td className="px-3 py-2 text-gray-700 align-middle leading-snug">
                               {info.nombre_proceso || `Proceso ${pid}`}
                             </td>
-                            
+
                             <td className="px-1 py-2 text-center text-gray-400 font-mono align-middle text-[10px]">
                               {info.max_pers ?? "-"}
                             </td>
@@ -193,7 +190,7 @@ export function SimulationProductCard({
               )}
             </div>
 
-            {/* BOTÓN VER COMBINACIONES */}
+            {}
             {!isPreview && escenarios.length > 0 && (
               <Button 
                 variant="outline" 
@@ -207,7 +204,7 @@ export function SimulationProductCard({
             )}
           </div>
 
-          {/* 3. MATERIALES */}
+          {}
           {!isPreview && (
              <div className="space-y-2 pt-2 border-t border-dashed border-gray-200 animate-in fade-in slide-in-from-bottom-2">
                 <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1">
@@ -232,7 +229,7 @@ export function SimulationProductCard({
              </div>
           )}
 
-          {/* 4. DIAGRAMA */}
+          {}
           <div className="border border-slate-200 rounded-lg overflow-hidden h-[120px] relative group mt-1 bg-slate-50">
             <DiagramCanvas productId={product.id_catalogo} readOnly />
             <div className="absolute inset-0 bg-slate-900/0 hover:bg-slate-900/5 transition-colors pointer-events-none" />
@@ -241,7 +238,7 @@ export function SimulationProductCard({
         </div>
       </div>
 
-      {/* MODAL DE COMBINACIONES */}
+      {}
       <CombinationsDialog 
         isOpen={showCombinations} 
         onClose={() => setShowCombinations(false)} 

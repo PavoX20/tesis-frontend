@@ -26,7 +26,7 @@ export default function Results() {
   const [catalogos, setCatalogos] = useState<CatalogoSimple[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(100);
-  
+
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<VisualSimulationResponse | null>(null);
   const [frames, setFrames] = useState<SimulationFrame[]>([]);
@@ -64,7 +64,7 @@ export default function Results() {
       setCurrentFrameIndex(0);
       setIsPlaying(true);
       toast.success("Simulación completada");
-      
+
     } catch (error) {
       console.error(error);
       toast.error("Error al generar simulación");
@@ -112,8 +112,6 @@ export default function Results() {
   const currentFrame = frames[currentFrameIndex] || null;
   const progressPercent = frames.length > 0 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0;
   const nodeStates = currentFrame?.nodos || {};
-
-  // --- RENDERIZADO ---
 
   if (configMode) {
     return (
@@ -180,7 +178,7 @@ export default function Results() {
     <div className="min-h-screen bg-slate-50/50 flex flex-col relative">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
-      {/* HEADER */}
+      {}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleStopAndBack} className="text-slate-500 hover:text-slate-800 -ml-2">
@@ -197,7 +195,7 @@ export default function Results() {
             <p className="text-xs text-slate-500">{data ? data.modelo : "Cargando..."}</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4 text-xs font-mono text-slate-500">
              <div className="flex flex-col items-end">
                 <span className="uppercase text-[10px] text-slate-400 font-bold">Meta</span>
@@ -214,7 +212,7 @@ export default function Results() {
       </header>
 
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-[1800px] mx-auto w-full relative z-10 pb-32">
-        
+
         <DashboardMetrics 
           modelName={data?.modelo || "..."}
           time={currentFrame?.tiempo || 0}
@@ -231,10 +229,10 @@ export default function Results() {
             />
         )}
 
-        {/* GRID PRINCIPAL: 5 Columnas (2 Diagrama / 3 Gráfica) */}
+        {}
         <div className="grid grid-cols-1 xl:grid-cols-6 gap-6 flex-1 min-h-[500px]">
-          
-          {/* DIAGRAMA ANIMADO (40%) - AHORA MÁS PEQUEÑO */}
+
+          {}
           <div className="xl:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden relative group">
             <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                <Button size="icon" variant="secondary" className="h-8 w-8 bg-white shadow-sm" onClick={handleReset}>
@@ -258,7 +256,7 @@ export default function Results() {
             </div>
           </div>
 
-          {/* GRÁFICA DE RENDIMIENTO (60%) - AHORA MÁS GRANDE */}
+          {}
           <div className="xl:col-span-3 h-full min-h-[300px] bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col">
             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
                 Análisis de Eficiencia (Ideal vs Real)

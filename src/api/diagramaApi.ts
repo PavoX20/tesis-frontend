@@ -25,7 +25,7 @@ export const getDiagramas = async () => {
 
 export const createDiagrama = async (payload: any) => {
   const { data } = await axiosClient.post("/diagramas/", payload);
-  // algunos backends devuelven { data: diagrama }, otros el objeto directo
+
   return (data && data.data) ? data.data : data;
 };
 
@@ -36,7 +36,7 @@ export const getDiagramasDetalle = async (idCatalogo: number) => {
 
 export const getDiagramasPorCatalogo = async (idCatalogo: number) => {
   const { data } = await axiosClient.get(`/diagramas/${idCatalogo}`);
-  // normaliza a un array de diagramas
+
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.diagramas)) return data.diagramas;
   if (Array.isArray(data?.data?.diagramas)) return data.data.diagramas;
@@ -45,14 +45,14 @@ export const getDiagramasPorCatalogo = async (idCatalogo: number) => {
 
 
 export async function getDiagramasByCatalogo(idCatalogo: number): Promise<Diagrama[]> {
-  // 1) query param
+
   try {
     const { data } = await axiosClient.get("/diagramas", { params: { catalogo_id: idCatalogo } });
     const list = normalizeList(data);
     if (list.length) return list;
   } catch {}
 
-  // 2) path param (fallback)
+
   try {
     const { data } = await axiosClient.get(`/diagramas/${idCatalogo}`);
     return normalizeList(data);

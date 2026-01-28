@@ -1,4 +1,3 @@
-// src/layout/MainLayout.tsx
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +14,7 @@ const tabs = [
 ];
 
 export default function MainLayout() {
-  // 👉 leer pestaña guardada en localStorage (si existe)
+
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("mainLayout:activeTab");
@@ -35,14 +34,14 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-100 via-white to-blue-100 text-gray-900">
-      {/* Header */}
+      {}
       <header className="bg-blue-600 text-white py-3 shadow-md">
         <h1 className="text-3xl font-semibold tracking-wide text-center">
           Proyecto Tesis
         </h1>
       </header>
 
-      {/* Main Content */}
+      {}
       <main className="flex-1 flex justify-center items-start py-6 px-3">
         <Card className="w-full max-w-[110rem] bg-white shadow-2xl border border-blue-100 rounded-3xl">
           <CardContent className="pt-0">
@@ -51,7 +50,7 @@ export default function MainLayout() {
               onValueChange={handleTabChange}
               className="w-full flex flex-col items-center"
             >
-              {/* Tabs */}
+              {}
               <TabsList className="flex justify-center gap-6 w-full max-w-5xl mb-4 bg-gray-100 rounded-xl p-2 shadow-inner">
                 {tabs.map((t) => (
                   <TabsTrigger
@@ -66,7 +65,7 @@ export default function MainLayout() {
                 ))}
               </TabsList>
 
-              {/* Tab Contents */}
+              {}
               <div className="w-full">
                 <TabsContent
                   value="diagrama"
