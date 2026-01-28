@@ -1,63 +1,41 @@
-export interface VisualNodeState {
-  cola: number;
-  ocupado: boolean;
-  nombre: string;
+// Estructura de un "Frame" o instante en la película
+export interface ProcessState {
+  estado: string;          // Ej: "ACTIVO", "PAUSADO S/MP", "FINALIZADO"
+  buffer_actual: number;   // El valor del buffer en ese momento
+  producido: string;       // Ej: "10/50"
 }
 
-export interface ProcessTableRow {
-  id_proceso: number;
-  nombre: string;
-  maquinas_count: number;
-  personal_count: number;
-  meta: number;
-  progreso: number; 
-  activo: boolean; 
-  estado: "ESPERANDO" | "BLOQUEADO" | "FINALIZADO" | "TRABAJANDO" | "EN COLA";
-  tiempo_activo: number;
-  tiempo_pausado: number;
+export interface AnimationFrame {
+  timestamp: number;       // Segundo exacto de la simulación (0.1, 0.2...)
+  procesos: Record<string, ProcessState>; // Diccionario { "100": { ... }, "101": { ... } }
 }
 
-export interface ResourceRow {
-  area: string;
-  recurso: string; 
-  cantidad: number;
+// Detalles finales calculados por la optimización
+export interface ProcessDetail {
+  buffer_recomendado: number; // EL DATO MÁS IMPORTANTE
+  estado_final: string;
+  t_activo: string;           // "HH:MM:SS.mmm"
+  t_pausado: string;
+  ratio_pausa?: number;
 }
 
-export interface PersonalRow {
-  area: string;
-  personal_total: number;
-  personal_ocupado: number;
-}
-
-export interface SimulationFrame {
-  tiempo: number;
-  buffer_stock: number;
-  cuello_botella: { id: number; nombre: string; cantidad_cola: number } | null;
-  nodos: Record<string, VisualNodeState>;
-  
-  tabla_procesos: ProcessTableRow[];
-  tabla_bodega: ResourceRow[];
-  tabla_maquinaria: ResourceRow[];
-  tabla_personal: PersonalRow[];
-}
-
-
-export interface ChartDataPoint {
-  nombre: string;
-  ideal_activo: number;
-  ideal_pausado: number;
-  real_activo: number;
-  real_pausado: number;
-}
-
+// La respuesta completa que viene del endpoint /visual-run
 export interface VisualSimulationResponse {
   modelo: string;
   meta_cantidad: number;
+  
   resumen: {
-    tiempo_total: number;
-    items_producidos: number;
+    tiempo_calculo: string;
+    status: string;
+    umbral_usado?: string;
   };
-  timeline: SimulationFrame[];
-  grafica: ChartDataPoint[]; 
+
+  // Aquí están los buffers óptimos (para mostrar en tabla de resultados)
+  detalles_procesos: Record<string, ProcessDetail>;
+
+  // Aquí está la película (para el reproductor/timeline)
+  historial_animacion: AnimationFrame[];
+
+  // La imagen generada en Python (Base64)
   grafica_base64?: string;
 }

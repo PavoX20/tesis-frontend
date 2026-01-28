@@ -1,20 +1,22 @@
 import { useEffect, useState, useRef } from "react";
 import { DashboardMetrics } from "@/components/context/resultsComponents/DashboardMetrics";
 import { PlaybackControls } from "@/components/context/resultsComponents/PlaybackControls";
-import { ChartPlaceholder } from "@/components/context/resultsComponents/ChartPlaceholder";
 import { SimulationTables } from "@/components/context/resultsComponents/SimulationTables";
+import { PerformanceChart } from "@/components/context/resultsComponents/PerformanceChart"; // Nuevo Componente
+import { ChartPlaceholder } from "@/components/context/resultsComponents/ChartPlaceholder";
 import DiagramCanvas from "@/pages/Diagram/DiagramCanvas/DiagramCanvas"; 
-import { Loader2, Play, Settings2, Box, Package, ArrowLeft, RefreshCcw } from "lucide-react";
+import { Loader2, Play, Settings2, Box, Package, ArrowLeft, RefreshCcw, Sliders } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider"; // Importamos Slider nativo
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import api from "@/api/axiosClient";
 import { getCatalogos } from "@/api/catalogoApi"; 
-import type { VisualSimulationResponse, SimulationFrame } from "@/types/visual-types";
+import { runVisualSimulation } from "@/api/simulacionApi";
+import type { VisualSimulationResponse, AnimationFrame, ProcessDetail } from "@/types/visual-types";
 
 interface CatalogoSimple {
   id_catalogo: number;
@@ -26,10 +28,13 @@ export default function Results() {
   const [catalogos, setCatalogos] = useState<CatalogoSimple[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(100);
+  const [threshold, setThreshold] = useState<number>(20); // Umbral % (Default 20)
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<VisualSimulationResponse | null>(null);
-  const [frames, setFrames] = useState<SimulationFrame[]>([]);
+  
+  // Estados para la Animación
+  const [frames, setFrames] = useState<AnimationFrame[]>([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1); 
@@ -55,15 +60,16 @@ export default function Results() {
     setConfigMode(false); 
 
     try {
-      const response = await api.post<VisualSimulationResponse>("/simulacion/visual-run", {
-        id_catalogo: Number(selectedProduct),
-        cantidad: quantity
+      const response = await runVisualSimulation({
+        productos: [{ id_catalogo: Number(selectedProduct), cantidad: quantity }],
+        umbral_pausa: threshold / 100 // Convertir 20 -> 0.20
       });
-      setData(response.data);
-      setFrames(response.data.timeline);
+      
+      setData(response);
+      setFrames(response.historial_animacion || []);
       setCurrentFrameIndex(0);
       setIsPlaying(true);
-      toast.success("Simulación completada");
+      toast.success("Optimización completada con éxito");
 
     } catch (error) {
       console.error(error);
@@ -87,7 +93,8 @@ export default function Results() {
   useEffect(() => {
     if (isPlaying && frames.length > 0) {
       stopAnimation(); 
-      const intervalTime = 500 / speed; 
+      // Calculamos velocidad de frames (ajusta el 100 según fluidez deseada)
+      const intervalTime = 100 / speed; 
       intervalRef.current = setInterval(() => {
         setCurrentFrameIndex((prev) => {
           if (prev >= frames.length - 1) { setIsPlaying(false); return prev; }
@@ -109,9 +116,21 @@ export default function Results() {
     setSpeed(speeds[(speeds.indexOf(speed) + 1) % speeds.length]);
   };
 
+  // Datos del Frame Actual
   const currentFrame = frames[currentFrameIndex] || null;
   const progressPercent = frames.length > 0 ? (currentFrameIndex / (frames.length - 1)) * 100 : 0;
-  const nodeStates = currentFrame?.nodos || {};
+  
+  // Transformar estado para DiagramCanvas
+  // DiagramCanvas espera: { [id]: { ocupado: boolean, cola: number, ... } }
+  // Nuestro frame tiene: { [id]: { estado: string, buffer_actual: number ... } }
+  const nodeStates = currentFrame ? Object.entries(currentFrame.procesos).reduce((acc, [id, state]) => {
+    acc[id] = {
+        ocupado: state.estado.includes("ACTIVO"),
+        cola: state.buffer_actual,
+        nombre: state.estado // Pasamos el estado como texto (ej: "PAUSADO S/MP")
+    };
+    return acc;
+  }, {} as Record<string, any>) : {};
 
   if (configMode) {
     return (
@@ -124,11 +143,12 @@ export default function Results() {
             </div>
             <CardTitle className="text-2xl font-bold text-slate-800">Nueva Simulación</CardTitle>
             <CardDescription className="text-slate-500 text-base">
-              Configura los parámetros para visualizar el flujo.
+              Configura los parámetros para optimizar el flujo.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6 px-8">
             <div className="space-y-4">
+              {/* Selector de Producto */}
               <div className="space-y-2">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                   <Box className="w-4 h-4" /> Modelo
@@ -146,6 +166,8 @@ export default function Results() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Cantidad Meta */}
               <div className="space-y-2">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                   <Package className="w-4 h-4" /> Cantidad Meta
@@ -158,6 +180,30 @@ export default function Results() {
                   className="h-12 font-mono text-lg border-slate-200 bg-slate-50/50 hover:bg-white rounded-lg"
                 />
               </div>
+
+              {/* Slider de Umbral de Optimización */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                        <Sliders className="w-4 h-4" /> Sensibilidad de Optimización
+                    </Label>
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
+                        {threshold}% Pausa
+                    </span>
+                </div>
+                <Slider 
+                    value={[threshold]} 
+                    min={5} 
+                    max={50} 
+                    step={5} 
+                    onValueChange={(val) => setThreshold(val[0])}
+                    className="py-2"
+                />
+                <p className="text-[10px] text-slate-400">
+                    Si un proceso para más del {threshold}% del tiempo, el sistema duplicará su buffer automáticamente.
+                </p>
+              </div>
+
             </div>
           </CardContent>
           <CardFooter className="pb-8 px-8">
@@ -166,7 +212,7 @@ export default function Results() {
               onClick={handleStartSimulation}
             >
               <Play className="w-5 h-5 mr-2 fill-white" />
-              Iniciar
+              Iniciar Optimización
             </Button>
           </CardFooter>
         </Card>
@@ -178,7 +224,7 @@ export default function Results() {
     <div className="min-h-screen bg-slate-50/50 flex flex-col relative">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
-      {}
+      {/* HEADER */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleStopAndBack} className="text-slate-500 hover:text-slate-800 -ml-2">
@@ -187,9 +233,9 @@ export default function Results() {
           <div className="h-6 w-px bg-slate-200" />
           <div>
             <h1 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              Resultados
+              Resultados de Optimización
               <Badge variant="outline" className="font-normal text-xs bg-blue-50 text-blue-700 border-blue-100">
-                {loading ? "Procesando..." : "Visualización"}
+                {loading ? "Calculando..." : "Buffers Óptimos"}
               </Badge>
             </h1>
             <p className="text-xs text-slate-500">{data ? data.modelo : "Cargando..."}</p>
@@ -205,7 +251,7 @@ export default function Results() {
              <div className="flex flex-col items-end">
                 <span className="uppercase text-[10px] text-slate-400 font-bold">Estado</span>
                 <span className={`font-bold ${isPlaying ? "text-green-600" : "text-amber-600"}`}>
-                  {loading ? "..." : isPlaying ? "CORRIENDO" : "PAUSADO"}
+                  {loading ? "..." : isPlaying ? "REPRODUCIENDO" : "PAUSADO"}
                 </span>
              </div>
         </div>
@@ -213,26 +259,30 @@ export default function Results() {
 
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-[1800px] mx-auto w-full relative z-10 pb-32">
 
+        {/* METRICAS PRINCIPALES */}
         <DashboardMetrics 
           modelName={data?.modelo || "..."}
-          time={currentFrame?.tiempo || 0}
-          bottleneck={currentFrame?.cuello_botella || null}
-          buffer={currentFrame?.buffer_stock || 0}
+          time={currentFrame?.timestamp || 0}
+          // El backend no envía cuello de botella explícito frame a frame, lo inferimos si quieres
+          bottleneck={null} 
+          // Mostramos el buffer del proceso 100 como ejemplo, o un promedio
+          buffer={0} 
         />
 
+        {/* TABLA DE RESULTADOS */}
         {data && (
             <SimulationTables 
-                processData={currentFrame?.tabla_procesos || []}
-                bodegaData={currentFrame?.tabla_bodega || []}
-                maquinariaData={currentFrame?.tabla_maquinaria || []}
-                personalData={currentFrame?.tabla_personal || []}
+                // Pasamos los detalles finales (buffers recomendados)
+                processDetails={data.detalles_procesos}
+                // Pasamos el estado instantáneo de la animación
+                currentFrameProcesses={currentFrame?.procesos || {}}
             />
         )}
 
-        {}
+        {/* DIAGRAMA Y GRÁFICA */}
         <div className="grid grid-cols-1 xl:grid-cols-6 gap-6 flex-1 min-h-[500px]">
 
-          {}
+          {/* DIAGRAMA VISUAL (CANVAS) */}
           <div className="xl:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden relative group">
             <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                <Button size="icon" variant="secondary" className="h-8 w-8 bg-white shadow-sm" onClick={handleReset}>
@@ -249,24 +299,24 @@ export default function Results() {
                  <div className="absolute inset-0 bg-white/80 backdrop-blur-md flex items-center justify-center z-20">
                    <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in">
                      <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-                     <p className="text-sm font-bold text-slate-700">Calculando flujo óptimo...</p>
+                     <p className="text-sm font-bold text-slate-700">Optimizando Buffers...</p>
                    </div>
                  </div>
                )}
             </div>
           </div>
 
-          {}
+          {/* GRÁFICA DE RENDIMIENTO */}
           <div className="xl:col-span-3 h-full min-h-[300px] bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col">
             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
-                Análisis de Eficiencia (Ideal vs Real)
+                Análisis de Tiempos (Activo vs Pausado)
             </h3>
             <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200 overflow-hidden">
                 {data?.grafica_base64 ? (
                    <img 
                      src={`data:image/png;base64,${data.grafica_base64}`} 
                      alt="Gráfica de Rendimiento"
-                     className="max-w-full max-h-full object-contain"
+                     className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-500"
                    />
                 ) : (
                    <ChartPlaceholder />
@@ -276,6 +326,7 @@ export default function Results() {
         </div>
       </main>
 
+      {/* CONTROLES DE REPRODUCCIÓN */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-4">
         <PlaybackControls 
           isPlaying={isPlaying}
