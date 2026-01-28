@@ -10,7 +10,7 @@ interface SimulationTablesProps {
   personalData: PersonalRow[];
 }
 
-export function SimulationTables({ processData, bodegaData, maquinariaData, personalData }: SimulationTablesProps) {
+export function SimulationTables({ processData, maquinariaData, personalData }: SimulationTablesProps) {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
@@ -67,7 +67,8 @@ export function SimulationTables({ processData, bodegaData, maquinariaData, pers
       {/* 2. TABLAS DE RECURSOS (Columna Derecha) */}
       <div className="flex flex-col gap-4">
         
-        {/* Tabla Bodega */}
+        {/* Tabla Bodega (COMENTADA PARA OCULTAR) */}
+        {/*
         <Card className="border-slate-200 shadow-sm bg-white/80">
             <CardHeader className="py-2 border-b border-slate-100">
                  <CardTitle className="text-xs font-bold text-slate-600 uppercase">Inventario (Bodega)</CardTitle>
@@ -86,6 +87,7 @@ export function SimulationTables({ processData, bodegaData, maquinariaData, pers
                 </Table>
             </CardContent>
         </Card>
+        */}
 
         {/* Tabla Maquinaria */}
         <Card className="border-slate-200 shadow-sm bg-white/80">

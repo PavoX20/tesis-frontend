@@ -38,7 +38,7 @@ export default function DiagramCanvas({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedProcess, setSelectedProcess] = useState<ProcessData | null>(
-    null
+    null,
   );
 
   const [focusDiagramId, setFocusDiagramId] = useState<number | null>(null);
@@ -52,7 +52,7 @@ export default function DiagramCanvas({
       currentNodes.map((node) => {
         // Obtenemos el ID real del proceso (ej. 4)
         const processId = node.data.procesoId;
-        
+
         // Buscamos si existe estado para este proceso en el frame actual
         // Convertimos a string porque las keys del JSON suelen ser strings
         const state = simulationState[String(processId)];
@@ -60,7 +60,7 @@ export default function DiagramCanvas({
         if (state) {
           // Si el proceso está en la simulación, actualizamos su estilo
           const isBusy = state.ocupado;
-          
+
           return {
             ...node,
             style: {
@@ -74,12 +74,13 @@ export default function DiagramCanvas({
             },
             data: {
               ...node.data,
-              // Opcional: Podrías pasar la info de la cola al nodo si tu CustomNode lo soporta
-              label: isBusy ? `${state.nombre} (Cola: ${state.cola})` : node.data.label,
-            }
+              // CAMBIO APLICADO: Ya no concatenamos "(Cola: ...)"
+              // Simplemente dejamos el label original que viene de la BD.
+              label: node.data.label,
+            },
           };
         }
-        
+
         // Si no hay estado (o se reseteó), volver a estilo original
         return {
           ...node,
@@ -87,10 +88,10 @@ export default function DiagramCanvas({
             ...node.style,
             backgroundColor: "#ffffff",
             borderColor: "transparent",
-            borderWidth: "0px"
+            borderWidth: "0px",
           },
         };
-      })
+      }),
     );
   }, [simulationState]); // 👈 Dependencia clave: se ejecuta al cambiar el frame
 
@@ -179,7 +180,7 @@ export default function DiagramCanvas({
           const side = i % 2 === 0 ? -1 : 1;
           const xOffset = 400 + side * 400 * (Math.floor(i / 2) + 1);
           const procesosSub = (sub.procesos || []).sort(
-            (a: any, b: any) => a.orden - b.orden
+            (a: any, b: any) => a.orden - b.orden,
           );
           const ajusteY = principalNodes[0]?.position.y || TOP_Y;
 
@@ -215,7 +216,7 @@ export default function DiagramCanvas({
           };
 
           return [titleNode, ...processNodes];
-        }
+        },
       );
 
       const makeEdges = (nodes: Node<ProcessData>[]) =>
@@ -232,8 +233,8 @@ export default function DiagramCanvas({
         makeEdges(
           (sub.procesos || []).map((p: any) => ({
             id: `p${p.id_proceso}`,
-          })) as any
-        )
+          })) as any,
+        ),
       );
 
       const edgesEntreDiagramas: Edge[] = dependencias.map(
@@ -244,7 +245,7 @@ export default function DiagramCanvas({
           type: "smoothstep",
           animated: true,
           style: { stroke: "#2563eb", strokeWidth: 2 },
-        })
+        }),
       );
 
       const allNodes = [
@@ -296,8 +297,7 @@ export default function DiagramCanvas({
       const lowerNombre = nombre.toLocaleLowerCase("es");
 
       const candidatos = lookup.filter(
-        (p) =>
-          (p.nombre_proceso ?? "").toLocaleLowerCase("es") === lowerNombre
+        (p) => (p.nombre_proceso ?? "").toLocaleLowerCase("es") === lowerNombre,
       );
 
       const existing =
@@ -325,7 +325,7 @@ export default function DiagramCanvas({
     } catch (err: any) {
       console.error(
         "Error al agregar proceso al diagrama:",
-        err?.response?.data || err
+        err?.response?.data || err,
       );
     }
   };
@@ -379,7 +379,7 @@ export default function DiagramCanvas({
               const updatedNodes = await fetchDiagram();
               if (selectedProcess?.procesoId && updatedNodes) {
                 const updated = (updatedNodes as Node<ProcessData>[]).find(
-                  (n) => n.data.procesoId === selectedProcess.procesoId
+                  (n) => n.data.procesoId === selectedProcess.procesoId,
                 );
                 if (updated) setSelectedProcess(updated.data);
               }

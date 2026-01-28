@@ -12,7 +12,7 @@ export interface ProcessTableRow {
   meta: number;
   progreso: number; // <--- NUEVO CAMPO
   activo: boolean; 
-  estado: "TRABAJANDO" | "ESPERANDO" | "BLOQUEADO" | "FINALIZADO"; // Agregué FINALIZADO
+  estado: "ESPERANDO" | "BLOQUEADO" | "FINALIZADO" | "TRABAJANDO" | "EN COLA";
   tiempo_activo: number;
   tiempo_pausado: number;
 }

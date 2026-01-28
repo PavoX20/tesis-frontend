@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Clock, Box, AlertOctagon, Database, ArrowUpRight } from "lucide-react";
 
 interface DashboardMetricsProps {
@@ -49,7 +48,7 @@ export function DashboardMetrics({ modelName, time, bottleneck, buffer }: Dashbo
       </Card>
 
       {/* 3. CUELLO DE BOTELLA (Dinámico) */}
-      <Card className={`border-l-4 shadow-sm transition-all ${bottleneck ? "border-l-red-500 bg-red-50/30" : "border-l-green-500"}`}>
+      <Card className="border-l-4 border-l-red-500 shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-4 flex items-start justify-between">
           <div className="flex-1">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cuello de Botella</p>

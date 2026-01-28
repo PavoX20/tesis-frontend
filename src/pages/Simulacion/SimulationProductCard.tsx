@@ -85,11 +85,7 @@ export function SimulationProductCard({
               <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> Eficiencia
               </h4>
-              {!isPreview && (
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-[10px]">
-                  {result?.tiempo_total.toFixed(1)}h Total
-                </Badge>
-              )}
+              
             </div>
 
             <div className="border border-gray-200 rounded-lg bg-gray-50/30 p-3 shadow-sm min-h-[50px] flex flex-col justify-center">
