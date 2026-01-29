@@ -64,18 +64,7 @@ export function DashboardMetrics({ modelName, time }: DashboardMetricsProps) {
         </CardContent>
       </Card>
 
-      {/* 4. Placeholder (Podemos usarlo para iteraciones) */}
-      <Card className="border-l-4 border-l-amber-500 shadow-sm hover:shadow-md transition-shadow">
-        <CardContent className="p-4 flex items-start justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Iteraciones</p>
-            <h3 className="text-2xl font-black text-slate-800 leading-none">Auto</h3>
-          </div>
-          <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
-            <AlertOctagon className="w-5 h-5" />
-          </div>
-        </CardContent>
-      </Card>
+
     </div>
   );
 }
