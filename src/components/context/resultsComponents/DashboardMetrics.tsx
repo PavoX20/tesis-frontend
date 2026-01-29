@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, Box, AlertOctagon, Zap } from "lucide-react";
+import { Clock, Box, Zap } from "lucide-react";
 
 interface DashboardMetricsProps {
   modelName: string;
