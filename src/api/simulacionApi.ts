@@ -1,5 +1,9 @@
-import api from "./axiosClient";
+import axiosClient from "./axiosClient";
 import type { VisualSimulationResponse } from "../types/visual-types";
+
+// ==========================================
+// TIPOS LEGACY (Necesarios para que el build no falle en pantallas viejas)
+// ==========================================
 
 export interface Material {
   id_materia: number;
@@ -41,38 +45,44 @@ export interface SimulationResult {
   detalles_procesos: Record<string, DetalleProceso>;
 }
 
-
-export interface SimulationPayload {
-  productos: { id_catalogo: number; cantidad: number }[];
-  asignacion_manual?: Record<string, number>;
-  solo_info?: boolean; 
-}
+// ==========================================
+// TIPOS ACTUALES
+// ==========================================
 
 export interface SimulationPayload {
   productos: { id_catalogo: number; cantidad: number }[];
   asignacion_manual?: Record<string, number>;
   solo_info?: boolean;
-  
-  // Nuevo campo para controlar la optimización desde el front
-  // 0.20 = 20% (Default)
-  umbral_pausa?: number; 
 }
 
-// --- FUNCIONES API ---
+// ==========================================
+// FUNCIONES API
+// ==========================================
 
-// Simulación General (Costos/Personal)
+// 1. Simulación General (Legacy)
 export const runSimulation = async (payload: SimulationPayload) => {
-  const response = await api.post<SimulationResult[]>("/simulacion/run", payload);
-  return response.data;
+  const { data } = await axiosClient.post<SimulationResult[]>("/simulacion/run", payload);
+  return data;
 };
 
-// NUEVA: Simulación Visual / Optimización de Buffers (Angelo)
+// 2. Simulación Visual (Angelo Engine)
 export const runVisualSimulation = async (payload: SimulationPayload) => {
-  // Nota: El endpoint es /visual-run según configuramos en el backend
-  const response = await api.post<VisualSimulationResponse>("/simulacion/visual-run", payload,
-    { 
-      timeout: 120000 // 120,000 ms = 2 Minutos. Suficiente para la optimización.
-    }
-  );
-  return response.data;
+  // TRANSFORMACIÓN DE DATOS (Frontend -> Backend)
+  const requestBody = {
+    shoe_id: payload.productos[0].id_catalogo,
+    goal: payload.productos[0].cantidad
+  };
+
+  try {
+    const { data } = await axiosClient.post<VisualSimulationResponse>(
+      "/api/simulation/run", 
+      requestBody,
+      { timeout: 120000 }
+    );
+    return data;
+
+  } catch (error) {
+    console.error("❌ Error conectando a /api/simulation/run:", error);
+    throw error;
+  }
 };

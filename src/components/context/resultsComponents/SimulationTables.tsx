@@ -1,87 +1,106 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { ProcessDetail, ProcessState } from "@/types/visual-types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { ProcessState } from "@/types/visual-types";
 
 interface SimulationTablesProps {
-  processDetails: Record<string, ProcessDetail>; // Datos estáticos finales
-  currentFrameProcesses: Record<string, ProcessState>; // Datos dinámicos de animación
+  processDetails: Record<string, any>;
+  currentFrameProcesses: Record<string, ProcessState>;
 }
 
 export function SimulationTables({ processDetails, currentFrameProcesses }: SimulationTablesProps) {
-  
-  // Convertimos el objeto de detalles a un array para mapear
-  const rows = Object.entries(processDetails).map(([pid, detail]) => {
-    // Buscamos el estado actual en el frame de animación
-    const currentState = currentFrameProcesses[pid];
-    
-    return {
-      id: pid,
-      ...detail,
-      estado_actual: currentState?.estado || "ESPERANDO",
-      buffer_actual: currentState?.buffer_actual || detail.buffer_recomendado,
-      producido: currentState?.producido || "0"
-    };
-  });
+  const safeDetails = processDetails || {};
+  const safeProcesses = currentFrameProcesses || {};
+
+  const allProcessIds = Array.from(
+    new Set([...Object.keys(safeDetails), ...Object.keys(safeProcesses)]),
+  ).sort((a, b) => Number(a) - Number(b));
 
   return (
-    <Card className="border-slate-200 shadow-sm bg-white/80 backdrop-blur-sm">
-        <CardHeader className="py-3 border-b border-slate-100 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-bold text-slate-700 uppercase tracking-wide">
-             Resultados de Optimización por Proceso
-          </CardTitle>
-          <Badge variant="secondary" className="text-[10px]">Buffers Calculados</Badge>
-        </CardHeader>
-        <CardContent className="p-0 overflow-auto max-h-[400px]">
+    <Card className="h-full border-slate-200 shadow-sm bg-white flex flex-col overflow-hidden">
+      <CardHeader className="py-3 border-b border-slate-100 bg-slate-50/50 flex flex-row items-center justify-between px-4 shrink-0">
+        <CardTitle className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+          Detalle por Proceso
+        </CardTitle>
+        <Badge variant="outline" className="text-[10px] font-normal bg-white text-slate-500">
+          {allProcessIds.length} Procesos
+        </Badge>
+      </CardHeader>
+
+      <div className="flex-1 overflow-hidden relative">
+        <ScrollArea className="h-full w-full">
           <Table>
-            <TableHeader className="bg-slate-50 sticky top-0 z-10">
-              <TableRow>
-                <TableHead className="w-[50px] text-xs font-bold text-slate-500">ID</TableHead>
-                <TableHead className="text-xs font-bold text-slate-500">Estado Actual</TableHead>
-                <TableHead className="text-center text-xs font-bold text-blue-600 bg-blue-50">Buffer Óptimo</TableHead>
-                <TableHead className="text-center text-xs font-bold text-slate-500">Producido</TableHead>
-                <TableHead className="text-right text-xs font-bold text-slate-500">T. Activo</TableHead>
-                <TableHead className="text-right text-xs font-bold text-slate-500">T. Pausado</TableHead>
+            <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+              <TableRow className="hover:bg-slate-50 border-b border-slate-200">
+                <TableHead className="w-[60px] text-center font-bold text-slate-700 text-[10px] uppercase h-9">ID</TableHead>
+                
+                {/* --- NUEVA COLUMNA: NOMBRE (Dato real del proceso) --- */}
+                <TableHead className="text-left font-bold text-slate-700 text-[10px] uppercase h-9">Nombre</TableHead>
+
+                {/* --- COLUMNA EXISTENTE: NOMBRE DE MÁQUINA (Dato del historial) --- */}
+                <TableHead className="text-left font-bold text-slate-700 text-[10px] uppercase h-9">Nombre de la máquina</TableHead>
+
+                <TableHead className="text-center font-bold text-slate-700 text-[10px] uppercase h-9">Estado Actual</TableHead>
+                <TableHead className="text-center font-bold text-slate-700 text-[10px] uppercase h-9">Cola Actual</TableHead>
+                <TableHead className="text-right font-bold text-slate-700 text-[10px] uppercase h-9 pr-4">Progreso</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-slate-50 transition-colors">
-                  <TableCell className="font-mono text-xs text-slate-500">{row.id}</TableCell>
-                  <TableCell>
-                    <Badge 
-                        variant="outline" 
-                        className={`text-[10px] h-5 min-w-[80px] justify-center ${
-                            row.estado_actual.includes("ACTIVO") ? "bg-green-50 text-green-700 border-green-200" :
-                            row.estado_actual.includes("PAUSADO") ? "bg-amber-50 text-amber-700 border-amber-200" :
-                            row.estado_actual.includes("FINALIZADO") ? "bg-blue-50 text-blue-700 border-blue-200" :
-                            "bg-slate-50 text-slate-500 border-slate-200"
-                        }`}
-                    >
-                        {row.estado_actual}
-                    </Badge>
-                  </TableCell>
-                  
-                  {/* COLUMNA CLAVE: BUFFER RECOMENDADO */}
-                  <TableCell className="text-center font-bold text-blue-700 bg-blue-50/30 text-xs">
-                    {row.buffer_recomendado} u.
-                  </TableCell>
+              {allProcessIds.map((pid) => {
+                const currentState = safeProcesses[pid] || {};
+                const detail = safeDetails[pid] || {};
+                const estado = currentState.estado || detail.estado_final || "ESPERANDO";
+                
+                // 1. NOMBRE DE MÁQUINA (Lo que ya funcionaba)
+                const nombreMaquina = detail.nombre_maquina || detail.nombre || "-";
+                
+                // 2. NOMBRE DEL PROCESO (El que acabamos de obtener del backend)
+                const nombreProceso = detail.nombre_proceso || `Proceso ${pid}`;
 
-                  <TableCell className="text-center text-xs text-slate-600 font-mono">
-                    {row.producido}
-                  </TableCell>
-                  
-                  <TableCell className="text-right font-mono text-xs text-slate-600">
-                    {row.t_activo}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs text-slate-400">
-                    {row.t_pausado}
-                  </TableCell>
-                </TableRow>
-              ))}
+                return (
+                  <TableRow key={pid} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
+                    <TableCell className="text-center font-bold text-slate-600 text-xs py-2">{pid}</TableCell>
+
+                    {/* NOMBRE DEL PROCESO */}
+                    <TableCell className="text-left text-xs font-medium text-slate-700 py-2 truncate max-w-[150px]" title={nombreProceso}>
+                      {nombreProceso}
+                    </TableCell>
+
+                    {/* NOMBRE DE LA MÁQUINA */}
+                    <TableCell className="text-left text-xs font-medium text-slate-500 py-2 truncate max-w-[150px]" title={nombreMaquina}>
+                      {nombreMaquina}
+                    </TableCell>
+
+                    <TableCell className="text-center py-2">
+                      <Badge 
+                        variant="outline"
+                        className={`text-[9px] h-5 px-2 min-w-[80px] justify-center font-semibold border ${
+                          estado.toUpperCase().includes("TRABAJANDO") || estado.toUpperCase().includes("ACTIVO")
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : estado.toUpperCase().includes("PAUSADO") || estado.toUpperCase().includes("BLOQUEADO")
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : estado.toUpperCase().includes("FINALIZADO") 
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : "bg-slate-50 text-slate-400 border-slate-200"
+                        }`}
+                      >
+                        {estado}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center text-xs text-slate-600 font-mono py-2">
+                      {currentState.buffer_actual || 0}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs font-medium text-slate-600 pr-4 py-2">
+                      {currentState.producido || detail.producido || "0/0"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </ScrollArea>
+      </div>
+    </Card>
   );
 }
