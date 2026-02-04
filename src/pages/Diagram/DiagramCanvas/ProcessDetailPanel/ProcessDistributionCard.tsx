@@ -23,6 +23,8 @@ import { updateProceso } from "@/api/procesosApi";
 
 interface Props {
   process: ProcessData | null;
+  // 1. Agregamos el callback para notificar al padre
+  onUpdate?: () => void;
 }
 
 const SUPPORTED_DISTRIBS = [
@@ -33,7 +35,7 @@ const SUPPORTED_DISTRIBS = [
   { value: "gamma", label: "Gamma" },
 ];
 
-export function ProcessDistributionCard({ process }: Props) {
+export function ProcessDistributionCard({ process, onUpdate }: Props) {
   const [autoData, setAutoData] = useState<AutoResponse | null>(null);
   const [manualData, setManualData] = useState<ManualResponse | null>(null);
 
@@ -71,7 +73,7 @@ export function ProcessDistributionCard({ process }: Props) {
       try {
         const res = await getAutoDistribution(procesoId, 20);
         setAutoData(res);
-        setManualData(null); 
+        setManualData(null);
 
         if (res.modo === "auto") {
           if (res.seleccion) {
@@ -90,7 +92,6 @@ export function ProcessDistributionCard({ process }: Props) {
             );
           }
         } else {
-
           const def = distribucionBD || "norm";
           setSelectedDistrib(def);
           const names = await getDistributionParamNames(def);
@@ -176,66 +177,66 @@ export function ProcessDistributionCard({ process }: Props) {
     };
   }, [procesoId, distribucionBD, parametrosBD, autoData?.modo]);
 
-const handleDistribChange = async (value: string) => {
-  setSelectedDistrib(value);
-  setError(null);
+  const handleDistribChange = async (value: string) => {
+    setSelectedDistrib(value);
+    setError(null);
 
-  try {
+    try {
+      const names = await getDistributionParamNames(value);
+      setParamNames(names);
 
-    const names = await getDistributionParamNames(value);
-    setParamNames(names);
+      const isAutoMode = autoData?.modo === "auto";
 
-    const isAutoMode = autoData?.modo === "auto";
+      if (isAutoMode) {
+        let baseParams: number[] = [];
+        const fromRanking =
+          autoData?.ranking.find((r) => r.distrib === value)?.parametros ?? [];
+        if (Array.isArray(fromRanking)) {
+          baseParams = [...fromRanking];
+        }
 
-    if (isAutoMode) {
+        if (baseParams.length !== names.length) {
+          setParamValues(names.map(() => ""));
+          return;
+        }
 
-      let baseParams: number[] = [];
-      const fromRanking =
-        autoData?.ranking.find((r) => r.distrib === value)?.parametros ?? [];
-      if (Array.isArray(fromRanking)) {
-        baseParams = [...fromRanking];
-      }
+        setParamValues(baseParams.map((p) => String(p)));
 
-      if (baseParams.length !== names.length) {
-        setParamValues(names.map(() => ""));
+        if (!procesoId) return;
+
+        setLoadingManual(true);
+        try {
+          const res = await postManualDistribution(procesoId, {
+            nombre: value,
+            parametros: baseParams,
+            umbral: 20,
+          });
+          setManualData(res);
+
+          try {
+            await updateProceso(procesoId, {
+              distribucion: value,
+              parametros: JSON.stringify(baseParams),
+            });
+            // 2. Notificar al padre tras guardar
+            if (onUpdate) onUpdate();
+          } catch (e) {
+            console.error("Error guardando parametros en procesos:", e);
+          }
+        } finally {
+          setLoadingManual(false);
+        }
         return;
       }
 
-      setParamValues(baseParams.map((p) => String(p)));
-
-      if (!procesoId) return;
-
-      setLoadingManual(true);
-      try {
-        const res = await postManualDistribution(procesoId, {
-          nombre: value,
-          parametros: baseParams,
-          umbral: 20,
-        });
-        setManualData(res);
-
-        try {
-          await updateProceso(procesoId, {
-            distribucion: value,
-            parametros: JSON.stringify(baseParams),
-          });
-        } catch (e) {
-          console.error("Error guardando parametros en procesos:", e);
-        }
-      } finally {
-        setLoadingManual(false);
-      }
-      return;
+      setParamValues(names.map(() => ""));
+    } catch (e) {
+      console.error(e);
+      setParamNames([]);
+      setParamValues([]);
+      setError("Error al cargar parámetros de la distribución.");
     }
-
-    setParamValues(names.map(() => ""));
-  } catch (e) {
-    console.error(e);
-    setParamNames([]);
-    setParamValues([]);
-    setError("Error al cargar parámetros de la distribución.");
-  }
-};
+  };
 
   const handleRecalculate = async () => {
     if (!procesoId || !selectedDistrib) return;
@@ -261,6 +262,8 @@ const handleDistribChange = async (value: string) => {
           distribucion: selectedDistrib,
           parametros: JSON.stringify(nums),
         });
+        // 3. Notificar al padre tras guardar (para que actualice el estado global)
+        if (onUpdate) onUpdate();
       } catch (e) {
         console.error("Error guardando parametros en procesos:", e);
       }
@@ -287,7 +290,7 @@ const handleDistribChange = async (value: string) => {
 
   return (
     <div className="mt-6 space-y-3">
-      {}
+      {/* TÍTULO */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <BarChart3 className="h-5 w-5" />
@@ -295,7 +298,7 @@ const handleDistribChange = async (value: string) => {
         </h2>
       </div>
 
-      {}
+      {/* LOADER */}
       {loadingAuto && (
         <div className="text-sm text-gray-500 flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -303,13 +306,14 @@ const handleDistribChange = async (value: string) => {
         </div>
       )}
 
+      {/* ERROR */}
       {error && (
         <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
           {error}
         </div>
       )}
 
-      {}
+      {/* CARD PRINCIPAL */}
       <div className="border rounded-lg bg-white p-3 space-y-4">
         <p className="text-xs text-slate-500">
           Proceso: <span className="font-medium">{process.label}</span>
@@ -337,7 +341,7 @@ const handleDistribChange = async (value: string) => {
           </div>
         )}
 
-        {}
+        {/* SELECT DISTRIBUCIÓN */}
         {autoData && (
           <div className="space-y-2">
             <Label className="text-xs">Distribución a visualizar</Label>
@@ -377,7 +381,7 @@ const handleDistribChange = async (value: string) => {
           </div>
         )}
 
-                {}
+        {/* INPUTS DE PARÁMETROS */}
         {paramNames.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-slate-700">
@@ -398,8 +402,7 @@ const handleDistribChange = async (value: string) => {
                       setParamValues(copy);
                     }}
                     placeholder="0.0"
-                    disabled={autoData?.modo === "auto"}   
-
+                    disabled={autoData?.modo === "auto"}
                   />
                 </div>
               ))}
@@ -407,7 +410,7 @@ const handleDistribChange = async (value: string) => {
           </div>
         )}
 
-        {}
+        {/* BOTÓN CALCULAR */}
         {autoData && autoData.modo !== "auto" && (
           <div>
             <Button
@@ -428,7 +431,7 @@ const handleDistribChange = async (value: string) => {
           </div>
         )}
 
-        {}
+        {/* IMAGEN DE LA GRÁFICA */}
         {currentImage && (
           <div className="rounded-md bg-slate-50 p-2">
             <img
@@ -442,4 +445,3 @@ const handleDistribChange = async (value: string) => {
     </div>
   );
 }
-

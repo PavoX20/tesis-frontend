@@ -24,8 +24,7 @@ export interface ProcessData {
   orden?: number;
   distribucion?: string;
   parametros?: string | unknown;
-  diagramaId?: number; 
-
+  diagramaId?: number;
 }
 type Unidad = "M2" | "PAR" | "KG" | "UNIDAD";
 type TipoMateria = "materia_prima" | "materia_procesada" | "otro";
@@ -54,7 +53,7 @@ type RecetaLineaVM = { materiaId: number | null; cantidad: string };
 
 interface ProcessDetailPanelProps {
   selectedProcess: ProcessData | null;
-  catalogId?: number; 
+  catalogId?: number;
 
   onSaved?: () => void;
   onUnlink?: () => void;
@@ -405,6 +404,39 @@ export function ProcessDetailPanel({
     }
   };
 
+  /**
+   * Callback que se ejecuta cuando el ProcessDistributionCard realiza una actualización.
+   * Esto sincroniza el estado local (form) con la BD y solicita al padre que refresque.
+   */
+  const handleDistributionUpdate = async () => {
+    if (!selectedProcess?.procesoId) return;
+
+    try {
+      // 1. Obtenemos el detalle fresco desde la API
+      const { proceso } = await apiGetProcesoDetalle(selectedProcess.procesoId);
+
+      // 2. Actualizamos el estado local 'form' para que no quede obsoleto
+      const newForm = {
+        ...form, // Mantenemos el nombre (label) que el usuario pueda estar editando
+        distribucion: proceso.distribucion || "",
+        parametros: parseParams(proceso.parametros),
+      };
+      setForm(newForm);
+      // Actualizamos initialForm para que el botón "Guardar cambios" no se active falsamente
+      // solo por la distribución (ya que ya se guardó)
+      setInitialForm((prev) => ({
+        ...prev,
+        distribucion: newForm.distribucion,
+        parametros: newForm.parametros,
+      }));
+
+      // 3. Notificamos al padre para que actualice la lista/diagrama global
+      onSaved?.();
+    } catch (error) {
+      console.error("Error al refrescar datos del proceso:", error);
+    }
+  };
+
   if (!selectedProcess) {
     return (
       <div className="h-full flex items-center justify-center text-gray-400 italic">
@@ -416,7 +448,7 @@ export function ProcessDetailPanel({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto pr-2">
-        {}
+        {/* Cabecera */}
         <div className="space-y-3 pb-4 border-b border-gray-200 mb-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-800">
@@ -449,7 +481,7 @@ export function ProcessDetailPanel({
           </div>
         </div>
 
-        {}
+        {/* Receta */}
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Receta del proceso</h2>
           <RecipeSection
@@ -490,7 +522,7 @@ export function ProcessDetailPanel({
 
         <Separator className="my-6" />
 
-        {}
+        {/* Maquinaria y Área */}
         <AreaMachineSection
           areas={areas}
           areaId={areaId}
@@ -505,7 +537,7 @@ export function ProcessDetailPanel({
 
         <Separator className="my-6" />
 
-        {}
+        {/* Tipo */}
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Tipo de Proceso</h2>
           <div>
@@ -529,7 +561,10 @@ export function ProcessDetailPanel({
 
         <Separator className="my-6" />
 
-        <ProcessDistributionCard process={selectedProcess} />
+        <ProcessDistributionCard
+          process={selectedProcess}
+          onUpdate={handleDistributionUpdate}
+        />
       </div>
 
       <div className="border-t pt-3 mt-2 flex justify-between items-center gap-3">
@@ -555,4 +590,3 @@ export function ProcessDetailPanel({
     </div>
   );
 }
-
