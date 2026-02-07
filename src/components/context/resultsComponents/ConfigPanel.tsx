@@ -24,7 +24,6 @@ export function ConfigPanel({
   catalogos, 
   selectedProduct, 
   setSelectedProduct, 
-  quantity, 
   setQuantity, 
   onStart 
 }: ConfigPanelProps) {
@@ -73,8 +72,7 @@ export function ConfigPanel({
             </Label>
             <Input 
               type="number" 
-              min={1} 
-              value={quantity} 
+              value={10} 
               onChange={(e) => setQuantity(Number(e.target.value))}
               className="h-12 font-mono text-lg border-slate-200 bg-slate-50/50 hover:bg-white rounded-xl transition-colors focus:ring-2 focus:ring-blue-100"
             />

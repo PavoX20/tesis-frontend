@@ -1,5 +1,5 @@
 import axiosClient from "./axiosClient";
-import type { VisualSimulationResponse } from "../types/visual-types";
+import type { VisualSimulationResponse, OptimizationResponse } from "../types/visual-types";
 
 // ==========================================
 // TIPOS LEGACY (Mantenidos para compatibilidad)
@@ -89,6 +89,25 @@ export const runVisualSimulation = async (payload: SimulationPayload) => {
 
   } catch (error) {
     console.error("❌ Error conectando a /simulacion/visual-run:", error);
+    throw error;
+  }
+};
+
+export const runOptimizationAnalysis = async (payload: SimulationPayload) => {
+  const requestBody = {
+    shoe_id: payload.productos[0].id_catalogo,
+    goal: payload.productos[0].cantidad
+  };
+
+  try {
+    const { data } = await axiosClient.post<OptimizationResponse>(
+      "/simulacion/optimize", 
+      requestBody,
+      { timeout: 300000 } // 5 minutos (es un proceso pesado)
+    );
+    return data;
+  } catch (error) {
+    console.error("❌ Error en optimize:", error);
     throw error;
   }
 };

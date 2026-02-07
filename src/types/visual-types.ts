@@ -29,6 +29,7 @@ export interface SimulationMetadata {
   goal: number;
   bottleneck_process_id?: number;
   total_time_seconds: number;
+  bottleneck_buffer?: number;
 }
 
 export interface SimulationResults {
@@ -55,4 +56,28 @@ export interface SimulationHistoryRow {
   CANTIDAD: string | number;
   META: string | number;
   ID_MAQUINA?: string;
+}
+
+export interface DetalleConfigProceso {
+  id_proceso: number;
+  nombre_proceso: string;
+  maquinas_asignadas: number;
+  personal_asignado: number;
+}
+
+export interface EscenarioCombinatorio {
+  ranking: number;
+  tiempo_total: number;
+  total_personal: number;
+  total_maquinas: number;
+  buffer: number;
+  bottleneck_id?: number;
+  bottleneck_nombre?: string;
+  distribucion: DetalleConfigProceso[];
+}
+
+export interface OptimizationResponse {
+  status: string;
+  total_combinaciones_generadas: number;
+  escenarios: EscenarioCombinatorio[];
 }

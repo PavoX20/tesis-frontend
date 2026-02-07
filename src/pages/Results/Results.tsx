@@ -4,20 +4,19 @@ import { PlaybackControls } from "@/components/context/resultsComponents/Playbac
 import { SimulationTables } from "@/components/context/resultsComponents/SimulationTables";
 import { ChartPlaceholder } from "@/components/context/resultsComponents/ChartPlaceholder";
 import { ConfigPanel, type CatalogoSimple } from "@/components/context/resultsComponents/ConfigPanel"; 
-import { SimulationDiagramCanvas } from "@/components/context/resultsComponents/SimulationDiagramCanvas"; 
+import { SimulationDiagramCanvas } from "@/components/context/resultsComponents/SimulationDiagramCanvas";
+import { OptimizationDialog } from "@/components/context/resultsComponents/OptimizationDialog";
 
-import {ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getCatalogos } from "@/api/catalogoApi"; 
-// IMPORTANTE: Necesitamos esto para buscar el nombre real del proceso (ej. "Corte")
 import { getDiagramasDetalle } from "@/api/diagramaApi";
-import { runVisualSimulation } from "@/api/simulacionApi";
+import { runVisualSimulation, runOptimizationAnalysis } from "@/api/simulacionApi";
 import type { VisualSimulationResponse, AnimationFrame } from "@/types/visual-types";
 
 // --- MOTOR DE PROCESAMIENTO ---
-// Ahora recibe 'namesMap' para traducir ID -> Nombre Real
 function processHistory(rawList: any[], namesMap: Record<string, string>): { frames: AnimationFrame[], details: any } {
   if (!rawList || rawList.length === 0) return { frames: [], details: {} };
 
@@ -34,10 +33,7 @@ function processHistory(rawList: any[], namesMap: Record<string, string>): { fra
     const cantidad = typeof row.CANTIDAD === 'string' ? parseFloat(row.CANTIDAD) : (row.CANTIDAD || 0);
     const meta = row.META ?? row.meta ?? "0/0";
     
-    // 1. NOMBRE DE MÁQUINA (Viene del historial)
     const nombreMaquina = row.ID_MAQUINA ?? row.maquina ?? "-";
-    
-    // 2. NOMBRE DE PROCESO (Lo buscamos en el mapa del API, o fallback)
     const nombreProcesoReal = namesMap[pid] || `Proceso ${pid}`;
 
     if (!groupedFrames.has(t)) groupedFrames.set(t, {});
@@ -53,7 +49,7 @@ function processHistory(rawList: any[], namesMap: Record<string, string>): { fra
 
     if (!discoveredDetails[pid]) {
         discoveredDetails[pid] = {
-            nombre_proceso: nombreProcesoReal, // AQUI guardamos el nombre real para la tabla
+            nombre_proceso: nombreProcesoReal,
             nombre_maquina: nombreMaquina,
             estado_final: "..."
         };
@@ -92,6 +88,10 @@ export default function Results() {
   const [speed, setSpeed] = useState(1); 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [optOpen, setOptOpen] = useState(false);
+  const [optLoading, setOptLoading] = useState(false);
+  const [optData, setOptData] = useState<any>(null);
+
   useEffect(() => {
     getCatalogos().then(setCatalogos).catch(() => toast.error("Error cargando productos"));
   }, []);
@@ -102,26 +102,20 @@ export default function Results() {
     setConfigMode(false); 
 
     try {
-      // 1. Ejecutar Simulación
       const response = await runVisualSimulation({
         productos: [{ id_catalogo: Number(selectedProduct), cantidad: quantity }]
       });
       
       setData(response);
 
-      // 2. PETICIÓN AL BACK: OBTENER NOMBRES REALES DEL DIAGRAMA
-      // Esto es lo que pediste: buscar con el ID los datos reales.
       let namesMap: Record<string, string> = {};
       try {
         const diagramData = await getDiagramasDetalle(Number(selectedProduct));
-        
-        // Extraer nombres del diagrama principal
         if (diagramData.diagrama_principal?.procesos) {
             diagramData.diagrama_principal.procesos.forEach((p: any) => {
                 namesMap[String(p.id_proceso)] = p.nombre_proceso;
             });
         }
-        // Extraer nombres de subdiagramas
         if (diagramData.subdiagramas) {
             diagramData.subdiagramas.forEach((sub: any) => {
                 if (sub.procesos) {
@@ -132,10 +126,9 @@ export default function Results() {
             });
         }
       } catch (err) {
-        console.warn("No se pudieron cargar los nombres descriptivos del diagrama.", err);
+        console.warn("No se pudieron cargar nombres.", err);
       }
       
-      // 3. Procesar historial inyectando el mapa de nombres
       const rawList = response.results?.history_main || response.results?.historial_animacion || [];
       const { frames: processedFrames, details } = processHistory(rawList, namesMap);
       
@@ -154,6 +147,24 @@ export default function Results() {
       setConfigMode(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenOptimization = async () => {
+    setOptOpen(true);
+    if (optData) return;
+
+    setOptLoading(true);
+    try {
+        const res = await runOptimizationAnalysis({
+            productos: [{ id_catalogo: Number(selectedProduct), cantidad: quantity }]
+        });
+        setOptData(res);
+    } catch (error) {
+        toast.error("Error al calcular optimizaciones");
+        setOptOpen(false);
+    } finally {
+        setOptLoading(false);
     }
   };
 
@@ -197,7 +208,11 @@ export default function Results() {
   const foundModel = catalogos.find(c => c.id_catalogo === modelId);
   const modelName = foundModel ? foundModel.nombre : (data?.modelo || `Modelo ${modelId || "..."}`);
   
+  // === DEFINICIÓN CORRECTA DE VARIABLES ===
   const bottleneckId = data?.simulation_metadata?.bottleneck_process_id;
+  // Definimos aquí el buffer para que esté disponible en todo el componente
+  const bottleneckBuffer = data?.simulation_metadata?.bottleneck_buffer;
+  
   const chartImage = data?.results?.chart_base64;
   
   const finalDetails = Object.keys(data?.results?.detalles_procesos || {}).length > 0 
@@ -250,7 +265,7 @@ export default function Results() {
           <div className="h-6 w-px bg-slate-200" />
           <div>
             <h1 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              Resultados
+              Resultados de Optimización
               <Badge variant="outline" className="font-normal text-xs bg-blue-50 text-blue-700 border-blue-100">
                 {loading ? "Calculando..." : "Optimizado"}
               </Badge>
@@ -258,46 +273,98 @@ export default function Results() {
             <p className="text-xs text-slate-500 font-medium">{modelName}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-             <Badge variant="secondary" className="font-mono text-xs shadow-sm bg-white">
-                T = {(currentFrame?.timestamp || 0).toFixed(1)}s
-             </Badge>
+
+        <div className="flex items-center gap-4 text-xs font-mono text-slate-500">
+             {!configMode && (
+                <Button 
+                   size="sm" 
+                   onClick={handleOpenOptimization}
+                   className=" from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md border-0 h-8 mr-4"
+                >
+                   
+                   Ver combinaciones
+                </Button>
+             )}
+
+             <div className="flex flex-col items-end">
+                <span className="uppercase text-[10px] text-slate-400 font-bold">Meta</span>
+                <span className="font-bold text-slate-700">{quantity} u.</span>
+             </div>
+             <div className="h-8 w-px bg-slate-200" />
+             <div className="flex flex-col items-end">
+                <span className="uppercase text-[10px] text-slate-400 font-bold">Estado</span>
+                <span className={`font-bold ${isPlaying ? "text-green-600" : "text-amber-600"}`}>
+                  {loading ? "..." : isPlaying ? "REPRODUCIENDO" : "PAUSADO"}
+                </span>
+             </div>
         </div>
       </header>
 
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-[1800px] mx-auto w-full relative z-10 pb-32">
+
         <DashboardMetrics 
           modelName={modelName}
           time={currentFrame?.timestamp || 0}
           bottleneckId={bottleneckId} 
-          buffer={0} 
+          buffer={bottleneckBuffer} // Variable ya definida arriba
         />
 
-        <SimulationTables 
-            processDetails={finalDetails}
-            currentFrameProcesses={currentFrame?.procesos || {}}
-        />
+        {data && (
+            <SimulationTables 
+                processDetails={finalDetails}
+                currentFrameProcesses={currentFrame?.procesos || {}}
+            />
+        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-6 gap-6 flex-1 min-h-[500px]">
           <div className="xl:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden relative group">
-             <div className="flex-1 w-full h-full bg-slate-50/50 relative">
+            <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+               <Button size="icon" variant="secondary" className="h-8 w-8 bg-white shadow-sm" onClick={handleReset}>
+                  <RefreshCcw className="w-3 h-3 text-slate-600" />
+               </Button>
+            </div>
+            <div className="flex-1 w-full h-full bg-slate-50/50 relative">
                <SimulationDiagramCanvas 
                   key={selectedProduct} 
                   productId={Number(selectedProduct)} 
                   simulationState={nodeStates} 
                />
+               {loading && (
+                 <div className="absolute inset-0 bg-white/80 backdrop-blur-md flex items-center justify-center z-20">
+                   <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in">
+                     <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                     <p className="text-sm font-bold text-slate-700">Optimizando Buffers...</p>
+                   </div>
+                 </div>
+               )}
             </div>
           </div>
 
           <div className="xl:col-span-3 h-full min-h-[300px] bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
+                Análisis de Tiempos (Activo vs Pausado)
+            </h3>
             <div className="flex-1 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200 overflow-hidden">
                 {chartImage ? (
-                   <img src={`data:image/png;base64,${chartImage}`} className="max-w-full max-h-full object-contain" />
-                ) : <ChartPlaceholder />}
+                   <img 
+                     src={`data:image/png;base64,${chartImage}`} 
+                     alt="Gráfica de Rendimiento"
+                     className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-500"
+                   />
+                ) : (
+                   <ChartPlaceholder />
+                )}
             </div>
           </div>
         </div>
       </main>
+
+      <OptimizationDialog 
+         open={optOpen} 
+         onOpenChange={setOptOpen}
+         data={optData}
+         loading={optLoading}
+      />
 
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-4">
         <PlaybackControls 
