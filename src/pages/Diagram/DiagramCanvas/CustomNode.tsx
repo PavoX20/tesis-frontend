@@ -12,12 +12,12 @@ interface CustomNodeProps {
 export function CustomNode({ data, selected }: CustomNodeProps) {
   return (
     <div className="relative flex items-center justify-center w-[140px]">
-      {/* Número a la izquierda */}
+      {}
       <div className="absolute -left-6 text-sm font-semibold text-blue-600 select-none pointer-events-none">
         {data.orden}
       </div>
 
-      {/* Nodo principal */}
+      {}
       <div
         className={clsx(
           "px-3 py-2 rounded-md text-sm font-medium text-center w-full transition-all duration-150",
@@ -29,7 +29,7 @@ export function CustomNode({ data, selected }: CustomNodeProps) {
         {data.label}
       </div>
 
-      {/* Conectores */}
+      {}
       <Handle type="target" position={Position.Top} />
       <Handle type="source" position={Position.Bottom} />
     </div>

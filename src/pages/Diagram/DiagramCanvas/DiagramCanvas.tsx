@@ -11,14 +11,24 @@ import {
   updateProceso,
 } from "@/api/procesosApi";
 
+interface VisualNodeState {
+  cola: number;
+  ocupado: boolean;
+  nombre: string;
+}
+
 interface DiagramCanvasProps {
   productId: number;
   readOnly?: boolean;
+
+  simulationState?: Record<string, VisualNodeState>;
 }
 
 export default function DiagramCanvas({
   productId,
   readOnly = false,
+  simulationState, 
+
 }: DiagramCanvasProps) {
   const [nodes, setNodes] = useState<Node<ProcessData>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -28,11 +38,58 @@ export default function DiagramCanvas({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedProcess, setSelectedProcess] = useState<ProcessData | null>(
-    null
+    null,
   );
 
-  // 👇 NUEVO: id del diagrama que queremos enfocar (el principal)
   const [focusDiagramId, setFocusDiagramId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!simulationState || nodes.length === 0) return;
+
+    setNodes((currentNodes) =>
+      currentNodes.map((node) => {
+
+        const processId = node.data.procesoId;
+
+        const state = simulationState[String(processId)];
+
+        if (state) {
+
+          const isBusy = state.ocupado;
+
+          return {
+            ...node,
+            style: {
+              ...node.style,
+
+              backgroundColor: isBusy ? "#ffedd5" : "#ffffff", 
+
+              borderColor: isBusy ? "#f97316" : "transparent", 
+
+              borderWidth: isBusy ? "2px" : "0px",
+              transition: "background-color 0.2s, border-color 0.2s", 
+
+            },
+            data: {
+              ...node.data,
+
+              label: node.data.label,
+            },
+          };
+        }
+
+        return {
+          ...node,
+          style: {
+            ...node.style,
+            backgroundColor: "#ffffff",
+            borderColor: "transparent",
+            borderWidth: "0px",
+          },
+        };
+      }),
+    );
+  }, [simulationState]); 
 
   const fetchDiagram = async (): Promise<Node<ProcessData>[]> => {
     setLoading(true);
@@ -43,13 +100,11 @@ export default function DiagramCanvas({
       const subdiagramas: any[] = data.subdiagramas || [];
       const dependencias: any[] = data.dependencias || [];
 
-      // 👇 NUEVO: id del diagrama principal (si existe)
       const principalId: number | null =
         typeof principal.id_diagrama === "number"
           ? principal.id_diagrama
           : null;
 
-      // Constantes visuales
       const NODE_W = 140;
       const LEFT_GUTTER = 130;
       const ROW_H = 120;
@@ -68,7 +123,6 @@ export default function DiagramCanvas({
         return (minLeft + maxRight) / 2 - 20;
       };
 
-      // Crear nodos del diagrama principal
       const principalNodes: Node<ProcessData>[] = (principal.procesos || [])
         .sort((a: any, b: any) => a.orden - b.orden)
         .map((p: any, i: number) => ({
@@ -94,7 +148,6 @@ export default function DiagramCanvas({
         ? centerXByBounds(principalNodes)
         : 300;
 
-      // Nodo de título del principal
       let titleNodePrincipal: Node<ProcessData> | null = null;
       if (principalNodes.length > 0 || subdiagramas.length > 0) {
         const xAligned =
@@ -117,13 +170,12 @@ export default function DiagramCanvas({
         };
       }
 
-      // Subdiagramas
       const subdiagramasNodes: Node<ProcessData>[] = subdiagramas.flatMap(
         (sub: any, i: number) => {
           const side = i % 2 === 0 ? -1 : 1;
           const xOffset = 400 + side * 400 * (Math.floor(i / 2) + 1);
           const procesosSub = (sub.procesos || []).sort(
-            (a: any, b: any) => a.orden - b.orden
+            (a: any, b: any) => a.orden - b.orden,
           );
           const ajusteY = principalNodes[0]?.position.y || TOP_Y;
 
@@ -159,10 +211,9 @@ export default function DiagramCanvas({
           };
 
           return [titleNode, ...processNodes];
-        }
+        },
       );
 
-      // Edges internos
       const makeEdges = (nodes: Node<ProcessData>[]) =>
         nodes.slice(0, -1).map((_, i) => ({
           id: `e${nodes[i].id}-${nodes[i + 1].id}`,
@@ -177,11 +228,10 @@ export default function DiagramCanvas({
         makeEdges(
           (sub.procesos || []).map((p: any) => ({
             id: `p${p.id_proceso}`,
-          })) as any
-        )
+          })) as any,
+        ),
       );
 
-      // Edges entre diagramas
       const edgesEntreDiagramas: Edge[] = dependencias.map(
         (dep: any, idx: number) => ({
           id: `dep-${idx}`,
@@ -190,10 +240,9 @@ export default function DiagramCanvas({
           type: "smoothstep",
           animated: true,
           style: { stroke: "#2563eb", strokeWidth: 2 },
-        })
+        }),
       );
 
-      // Unir todo
       const allNodes = [
         ...(titleNodePrincipal ? [titleNodePrincipal] : []),
         ...principalNodes,
@@ -208,7 +257,6 @@ export default function DiagramCanvas({
       setNodes(allNodes);
       setEdges(allEdges);
 
-      // 👇 NUEVO: al terminar de construir el grafo, marcamos el diagrama principal como foco
       setFocusDiagramId(principalId);
 
       return allNodes;
@@ -236,32 +284,26 @@ export default function DiagramCanvas({
     const orden = Number(insertPos) || 1;
 
     try {
-      // 🔹 Misma consulta que usa el combobox, respetando el límite del back
       const lookup = await getProcesosLookup({
         catalogo_id: productId,
-        limit: 100, // 👈 MUY IMPORTANTE: <= límite que acepta el backend
+        limit: 100,
       });
 
       const lowerNombre = nombre.toLocaleLowerCase("es");
 
-      // 🔍 Procesos de este catálogo con ese mismo nombre
       const candidatos = lookup.filter(
-        (p) =>
-          (p.nombre_proceso ?? "").toLocaleLowerCase("es") === lowerNombre
+        (p) => (p.nombre_proceso ?? "").toLocaleLowerCase("es") === lowerNombre,
       );
 
-      // Preferimos uno sin diagrama todavía; si no, el primero que coincida
       const existing =
         candidatos.find((p) => p.id_diagrama == null) ?? candidatos[0];
 
       if (existing) {
-        // ♻️ Reutilizar proceso existente: solo lo colgamos del diagrama
         await updateProceso(existing.id_proceso, {
           id_diagrama: idDiagrama,
           orden,
         });
       } else {
-        // ➕ No existe ninguno para este producto → creamos uno nuevo
         await createProceso({
           nombre_proceso: nombre,
           id_diagrama: idDiagrama,
@@ -271,7 +313,6 @@ export default function DiagramCanvas({
         });
       }
 
-      // Refrescamos diagrama y limpiamos estado
       await fetchDiagram();
       setNewNodeName("");
       setInsertPos("1");
@@ -279,7 +320,7 @@ export default function DiagramCanvas({
     } catch (err: any) {
       console.error(
         "Error al agregar proceso al diagrama:",
-        err?.response?.data || err
+        err?.response?.data || err,
       );
     }
   };
@@ -304,7 +345,6 @@ export default function DiagramCanvas({
 
   return (
     <div className={containerClassName}>
-      {/* Zona izquierda */}
       <div className={readOnly ? "w-full" : "w-1/2"}>
         <DiagramGraph
           nodes={nodes}
@@ -320,13 +360,11 @@ export default function DiagramCanvas({
           onNodeClick={(data) => {
             if (!readOnly) setSelectedProcess(data);
           }}
-          // 👇 NUEVO: pasamos el diagrama a enfocar
           focusDiagramId={focusDiagramId}
           readOnly={readOnly}
         />
       </div>
 
-      {/* Zona derecha */}
       {!readOnly && (
         <div className="w-1/2 p-6 overflow-y-auto bg-blue-50">
           <ProcessDetailPanel
@@ -336,14 +374,14 @@ export default function DiagramCanvas({
               const updatedNodes = await fetchDiagram();
               if (selectedProcess?.procesoId && updatedNodes) {
                 const updated = (updatedNodes as Node<ProcessData>[]).find(
-                  (n) => n.data.procesoId === selectedProcess.procesoId
+                  (n) => n.data.procesoId === selectedProcess.procesoId,
                 );
                 if (updated) setSelectedProcess(updated.data);
               }
             }}
             onUnlink={async () => {
-              await fetchDiagram(); // recarga canvas
-              setSelectedProcess(null); // quita panel porque ya no está en el diagrama
+              await fetchDiagram();
+              setSelectedProcess(null);
             }}
           />
         </div>
@@ -351,3 +389,4 @@ export default function DiagramCanvas({
     </div>
   );
 }
+

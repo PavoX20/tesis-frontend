@@ -10,7 +10,7 @@ export const getCatalogos = async (): Promise<Catalogo[]> => {
 
 export const getCatalogoById = async (id: number): Promise<Catalogo> => {
   const { data } = await axiosClient.get(`/catalogo/${id}`);
-  return data?.catalogo ?? data; // acepta ambas formas
+  return data?.catalogo ?? data; 
 };
 
 export const createCatalogo = async (payload: Partial<Catalogo>) => {

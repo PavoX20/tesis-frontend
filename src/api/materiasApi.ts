@@ -12,11 +12,11 @@ const API = "/materias";
 
 export async function listMaterias(q?: string, limit = 50, skip = 0): Promise<Materia[]> {
   const res = await axios.get(API, { params: { q, limit, skip } });
-  // el backend responde un array puro -> devuelve res.data
+
   return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function createMateria(payload: Omit<Materia, "id_materia">): Promise<Materia> {
   const res = await axios.post(API, payload);
-  return res.data; // objeto Materia
+  return res.data; 
 }
