@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Settings2, Play, Box, Package } from "lucide-react";
 
-// Definimos la interfaz aquí para no depender de otros archivos
 export interface CatalogoSimple {
   id_catalogo: number;
   nombre: string;
@@ -27,12 +26,12 @@ export function ConfigPanel({
   setQuantity, 
   onStart 
 }: ConfigPanelProps) {
-  
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6 relative">
       <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-50 pointer-events-none" />
-      
-      {/* Tarjeta de Configuración Compacta */}
+
+      {}
       <Card className="w-full max-w-md shadow-2xl border-white/50 bg-white/90 backdrop-blur-xl animate-in zoom-in-95 duration-500 relative z-10">
         <CardHeader className="text-center pb-2 pt-8">
           <div className="mx-auto bg-blue-100 p-3 rounded-2xl w-fit mb-3 text-blue-600 shadow-sm">
@@ -43,10 +42,10 @@ export function ConfigPanel({
             Configura el modelo y la meta de producción.
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-5 px-8 py-4">
-          
-          {/* Selector de Producto */}
+
+          {}
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
               <Box className="w-3.5 h-3.5 text-blue-500" /> Modelo
@@ -65,7 +64,7 @@ export function ConfigPanel({
             </Select>
           </div>
 
-          {/* Cantidad Meta */}
+          {}
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
               <Package className="w-3.5 h-3.5 text-blue-500" /> Cantidad Meta

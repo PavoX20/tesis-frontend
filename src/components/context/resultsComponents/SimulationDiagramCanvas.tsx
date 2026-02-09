@@ -7,8 +7,8 @@ import {
   useEdgesState, 
   Handle, 
   Position,
-  type Node, // IMPORTANTE: Importamos el tipo Node de la librería
-  type Edge  // IMPORTANTE: Importamos el tipo Edge de la librería
+  type Node, 
+  type Edge 
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css"; 
 import { Loader2 } from "lucide-react";
@@ -125,7 +125,6 @@ export function SimulationDiagramCanvas({ productId, simulationState }: Simulati
     setNodes((nds) => nds.map((node) => {
         const state = simulationState[node.id];
         if (!state) return node;
-        // Casteamos node.data para evitar error TS2339
         const nodeData = node.data as { status?: string, cola?: number };
         
         if (nodeData.status === state.statusColor && nodeData.cola === state.cola) return node;
@@ -140,7 +139,7 @@ export function SimulationDiagramCanvas({ productId, simulationState }: Simulati
             } 
         };
     }));
-  }, [simulationState, setNodes, nodes.length]); // Agregamos nodes.length para estabilidad
+  }, [simulationState, setNodes, nodes.length]); 
 
   if (loading) return <div className="flex h-full items-center justify-center text-slate-400 gap-2"><Loader2 className="animate-spin w-5 h-5"/> <span className="text-sm font-medium">Cargando diagrama...</span></div>;
 

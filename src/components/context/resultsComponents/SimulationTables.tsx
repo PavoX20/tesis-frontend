@@ -34,11 +34,11 @@ export function SimulationTables({ processDetails, currentFrameProcesses }: Simu
             <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm">
               <TableRow className="hover:bg-slate-50 border-b border-slate-200">
                 <TableHead className="w-[60px] text-center font-bold text-slate-700 text-[10px] uppercase h-9">ID</TableHead>
-                
-                {/* --- NUEVA COLUMNA: NOMBRE (Dato real del proceso) --- */}
+
+                {}
                 <TableHead className="text-left font-bold text-slate-700 text-[10px] uppercase h-9">Nombre</TableHead>
 
-                {/* --- COLUMNA EXISTENTE: NOMBRE DE MÁQUINA (Dato del historial) --- */}
+                {}
                 <TableHead className="text-left font-bold text-slate-700 text-[10px] uppercase h-9">Nombre de la máquina</TableHead>
 
                 <TableHead className="text-center font-bold text-slate-700 text-[10px] uppercase h-9">Estado Actual</TableHead>
@@ -51,23 +51,21 @@ export function SimulationTables({ processDetails, currentFrameProcesses }: Simu
                 const currentState = safeProcesses[pid] || {};
                 const detail = safeDetails[pid] || {};
                 const estado = currentState.estado || detail.estado_final || "ESPERANDO";
-                
-                // 1. NOMBRE DE MÁQUINA (Lo que ya funcionaba)
+
                 const nombreMaquina = detail.nombre_maquina || detail.nombre || "-";
-                
-                // 2. NOMBRE DEL PROCESO (El que acabamos de obtener del backend)
+
                 const nombreProceso = detail.nombre_proceso || `Proceso ${pid}`;
 
                 return (
                   <TableRow key={pid} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
                     <TableCell className="text-center font-bold text-slate-600 text-xs py-2">{pid}</TableCell>
 
-                    {/* NOMBRE DEL PROCESO */}
+                    {}
                     <TableCell className="text-left text-xs font-medium text-slate-700 py-2 truncate max-w-[150px]" title={nombreProceso}>
                       {nombreProceso}
                     </TableCell>
 
-                    {/* NOMBRE DE LA MÁQUINA */}
+                    {}
                     <TableCell className="text-left text-xs font-medium text-slate-500 py-2 truncate max-w-[150px]" title={nombreMaquina}>
                       {nombreMaquina}
                     </TableCell>

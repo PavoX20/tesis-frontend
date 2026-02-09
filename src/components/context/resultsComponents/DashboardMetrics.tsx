@@ -9,7 +9,7 @@ interface DashboardMetricsProps {
 }
 
 export function DashboardMetrics({ modelName, time, bottleneckId, buffer }: DashboardMetricsProps) {
-  
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -18,8 +18,8 @@ export function DashboardMetrics({ modelName, time, bottleneckId, buffer }: Dash
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      
-      {/* 1. MODELO */}
+
+      {}
       <Card className="bg-white border-slate-200 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-3 opacity-10">
           <Box className="w-16 h-16 text-slate-900" />
@@ -34,7 +34,7 @@ export function DashboardMetrics({ modelName, time, bottleneckId, buffer }: Dash
         </CardContent>
       </Card>
 
-      {/* 2. TIEMPO */}
+      {}
       <Card className="bg-white border-slate-200 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-3 opacity-10">
            <Clock className="w-16 h-16 text-blue-600" />
@@ -50,7 +50,7 @@ export function DashboardMetrics({ modelName, time, bottleneckId, buffer }: Dash
         </CardContent>
       </Card>
 
-      {/* 3. CUELLO DE BOTELLA */}
+      {}
       <Card className="bg-white border-slate-200 shadow-sm relative overflow-hidden group">
          <div className="absolute right-0 top-0 h-full w-1 bg-amber-500" />
          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -74,14 +74,14 @@ export function DashboardMetrics({ modelName, time, bottleneckId, buffer }: Dash
          </CardContent>
       </Card>
 
-      {/* 4. BUFFER (MODIFICADO A UNIDADES) */}
+      {}
       <Card className="bg-white border-slate-200 shadow-sm relative overflow-hidden group">
          <div className="absolute right-0 top-0 h-full w-1 bg-indigo-500" />
          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
             <Layers className="w-16 h-16 text-indigo-500" />
          </div>
          <CardContent className="p-4 flex flex-col justify-between h-full relative z-10">
-           {/* CAMBIÉ EL TÍTULO */}
+           {}
            <p className="text-xs font-bold text-indigo-600/80 uppercase tracking-wider flex items-center gap-1">
               <Database className="w-3 h-3" />
               Buffer Cuello de Botella
@@ -90,13 +90,13 @@ export function DashboardMetrics({ modelName, time, bottleneckId, buffer }: Dash
               {buffer !== undefined ? (
                 <>
                   <div className="flex items-baseline gap-1">
-                    {/* CAMBIÉ EL FORMATO: Sin decimales si es entero y 'u.' en vez de '%' */}
+                    {}
                     <h3 className="text-2xl font-mono font-bold text-slate-800">
                         {Number.isInteger(buffer) ? buffer : buffer.toFixed(1)}
                     </h3>
                     <span className="text-sm text-slate-500 font-bold">u.</span>
                   </div>
-                  
+
                 </>
               ) : (
                 <span className="text-sm text-slate-400 italic">--</span>
