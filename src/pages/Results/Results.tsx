@@ -16,7 +16,7 @@ import { getDiagramasDetalle } from "@/api/diagramaApi";
 import { runVisualSimulation, runOptimizationAnalysis } from "@/api/simulacionApi";
 import type { VisualSimulationResponse, AnimationFrame } from "@/types/visual-types";
 
-// --- MOTOR DE PROCESAMIENTO ---
+
 function processHistory(rawList: any[], namesMap: Record<string, string>): { frames: AnimationFrame[], details: any } {
   if (!rawList || rawList.length === 0) return { frames: [], details: {} };
 
@@ -208,9 +208,9 @@ export default function Results() {
   const foundModel = catalogos.find(c => c.id_catalogo === modelId);
   const modelName = foundModel ? foundModel.nombre : (data?.modelo || `Modelo ${modelId || "..."}`);
   
-  // === DEFINICIÓN CORRECTA DE VARIABLES ===
+
   const bottleneckId = data?.simulation_metadata?.bottleneck_process_id;
-  // Definimos aquí el buffer para que esté disponible en todo el componente
+ 
   const bottleneckBuffer = data?.simulation_metadata?.bottleneck_buffer;
   
   const chartImage = data?.results?.chart_base64;
@@ -306,7 +306,7 @@ export default function Results() {
           modelName={modelName}
           time={currentFrame?.timestamp || 0}
           bottleneckId={bottleneckId} 
-          buffer={bottleneckBuffer} // Variable ya definida arriba
+          buffer={bottleneckBuffer} 
         />
 
         {data && (

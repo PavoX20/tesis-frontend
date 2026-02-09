@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Settings2, Play, Box, Package } from "lucide-react";
 
-// Definimos la interfaz aquí para no depender de otros archivos
+
 export interface CatalogoSimple {
   id_catalogo: number;
   nombre: string;
@@ -24,6 +24,7 @@ export function ConfigPanel({
   catalogos, 
   selectedProduct, 
   setSelectedProduct, 
+  quantity, 
   setQuantity, 
   onStart 
 }: ConfigPanelProps) {
@@ -72,7 +73,8 @@ export function ConfigPanel({
             </Label>
             <Input 
               type="number" 
-              value={10} 
+              min={1} 
+              value={quantity} 
               onChange={(e) => setQuantity(Number(e.target.value))}
               className="h-12 font-mono text-lg border-slate-200 bg-slate-50/50 hover:bg-white rounded-xl transition-colors focus:ring-2 focus:ring-blue-100"
             />

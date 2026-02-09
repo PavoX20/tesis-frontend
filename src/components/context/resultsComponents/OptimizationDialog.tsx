@@ -26,7 +26,7 @@ interface Props {
 }
 
 export function OptimizationDialog({ open, onOpenChange, data, loading }: Props) {
-  
+
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
@@ -36,7 +36,7 @@ export function OptimizationDialog({ open, onOpenChange, data, loading }: Props)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-[98vw] h-[95vh] flex flex-col p-0 gap-0">
-        
+
         <DialogHeader className="px-6 py-4 border-b bg-white rounded-t-lg shrink-0">
           <div className="flex items-center justify-between mr-8">
             <DialogTitle className="flex items-center gap-2 text-xl">
@@ -75,10 +75,10 @@ export function OptimizationDialog({ open, onOpenChange, data, loading }: Props)
                          <TableHead className="w-[60px] text-center font-bold text-slate-900 bg-white h-12">Rank</TableHead>
                          <TableHead className="w-[110px] text-center font-bold text-slate-900 bg-white h-12">Tiempo</TableHead>
                          <TableHead className="w-[110px] text-center font-bold text-slate-900 bg-white h-12">Buffer</TableHead>
-                         
-                         {/* NUEVA COLUMNA CUELLO DE BOTELLA */}
+
+                         {}
                          <TableHead className="w-[300px] text-center font-bold text-slate-900 bg-white h-12">Cuello de Botella</TableHead>
-                         
+
                          <TableHead className="w-[90px] text-center font-bold text-slate-900 bg-white h-12">Total Pers.</TableHead>
                          <TableHead className="w-[90px] text-center font-bold text-slate-900 bg-white h-12">Total Maq.</TableHead>
                          <TableHead className="font-bold text-slate-900 bg-white h-12 pl-4">Distribución (Detalle por Proceso)</TableHead>
@@ -87,19 +87,19 @@ export function OptimizationDialog({ open, onOpenChange, data, loading }: Props)
                    <TableBody>
                       {data?.escenarios.map((esc) => (
                         <TableRow key={esc.ranking} className="odd:bg-white even:bg-slate-50/50 hover:bg-indigo-50/30 transition-colors border-b border-slate-100">
-                           {/* RANKING */}
+                           {}
                            <TableCell className="text-center font-bold text-lg text-slate-500 font-mono align-middle">
                               #{esc.ranking}
                            </TableCell>
-                           
-                           {/* TIEMPO */}
+
+                           {}
                            <TableCell className="text-center align-middle">
                               <Badge variant="outline" className={`font-mono text-sm px-3 py-1 shadow-sm ${esc.ranking === 1 ? "bg-green-100 text-green-700 border-green-300 ring-1 ring-green-300/50" : "bg-white text-slate-700"}`}>
                                  {formatTime(esc.tiempo_total)}
                               </Badge>
                            </TableCell>
 
-                           {/* BUFFER */}
+                           {}
                            <TableCell className="text-center align-middle">
                               <div className="flex items-center justify-center">
                                 <Badge variant="secondary" className="font-mono text-xs bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5">
@@ -111,12 +111,12 @@ export function OptimizationDialog({ open, onOpenChange, data, loading }: Props)
                               </div>
                            </TableCell>
 
-                           {/* NUEVA CELDA: CUELLO DE BOTELLA */}
+                           {}
                            <TableCell className="text-center align-middle">
                               <div className="flex items-center justify-center">
                                 {esc.bottleneck_nombre ? (
                                     <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 hover:bg-amber-100 max-w-[160px] truncate" title={esc.bottleneck_nombre}>
-                                        
+
                                         <span className="truncate">{esc.bottleneck_nombre}</span>
                                     </Badge>
                                 ) : (
@@ -125,17 +125,17 @@ export function OptimizationDialog({ open, onOpenChange, data, loading }: Props)
                               </div>
                            </TableCell>
 
-                           {/* TOTAL PERSONAL */}
+                           {}
                            <TableCell className="text-center font-medium text-slate-600 align-middle">
                               {esc.total_personal}
                            </TableCell>
 
-                           {/* TOTAL MÁQUINAS */}
+                           {}
                            <TableCell className="text-center font-medium text-slate-600 align-middle">
                               {esc.total_maquinas}
                            </TableCell>
 
-                           {/* DISTRIBUCIÓN */}
+                           {}
                            <TableCell className="py-3 px-4">
                               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
                                  {esc.distribucion.map((proc, idx) => (
